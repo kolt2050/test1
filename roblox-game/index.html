@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block World - 3D Игра</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* UI Overlay */
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Health Bar */
+        #health-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 2px solid #fff;
+            overflow: hidden;
+        }
+
+        #health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.3s;
+        }
+
+        #health-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Coins */
+        #coins-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: gold;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #coins-display::before {
+            content: '🪙';
+        }
+
+        /* Crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        #crosshair::before {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #crosshair::after {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Controls Info */
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        #controls-info kbd {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        #start-screen h1 {
+            font-size: 72px;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88; }
+            to { text-shadow: 0 0 30px #00ff88, 0 0 60px #00ff88, 0 0 80px #00ff88; }
+        }
+
+        #start-screen p {
+            color: #aaa;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        #start-button {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            border: none;
+            border-radius: 30px;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        #start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Inventory */
+        #inventory {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .inventory-slot.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .inventory-slot span {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: white;
+        }
+
+        /* Messages */
+        #messages {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .message {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            animation: fadeInOut 3s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Minimap */
+        #minimap {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        #minimap-canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div id="minimap">
+                <canvas id="minimap-canvas"></canvas>
+            </div>
+            
+            <div id="coins-display">0</div>
+            
+            <div id="crosshair"></div>
+            
+            <div id="health-bar-container">
+                <div id="health-bar"></div>
+                <div id="health-text">100/100</div>
+            </div>
+            
+            <div id="inventory">
+                <div class="inventory-slot active">🧱<span>1</span></div>
+                <div class="inventory-slot">🪨<span>2</span></div>
+                <div class="inventory-slot">🌳<span>3</span></div>
+                <div class="inventory-slot">💎<span>4</span></div>
+                <div class="inventory-slot">⚔️<span>5</span></div>
+            </div>
+            
+            <div id="controls-info">
+                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Движение<br>
+                <kbd>Space</kbd> Прыжок<br>
+                <kbd>Shift</kbd> Бег<br>
+                <kbd>ЛКМ</kbd> Разрушить блок<br>
+                <kbd>ПКМ</kbd> Поставить блок<br>
+                <kbd>1-5</kbd> Выбор предмета
+            </div>
+            
+            <div id="messages"></div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>BLOCK WORLD</h1>
+            <p>3D приключение в мире блоков</p>
+            <button id="start-button">ИГРАТЬ</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game State
+        const gameState = {
+            started: false,
+            health: 100,
+            maxHealth: 100,
+            coins: 0,
+            selectedSlot: 0,
+            inventory: ['brick', 'stone', 'wood', 'diamond', 'sword']
+        };
+
+        // Three.js Setup
+        let scene, camera, renderer;
+        let player, playerVelocity, playerOnGround;
+        let playerLeftLeg, playerRightLeg, playerLeftArm, playerRightArm;
+        let playerSword;
+        let walkAnimation = 0;
+        let isWalking = false;
+        let isAttacking = false;
+        let attackAnimation = 0;
+        let blocks = [];
+        let coins = [];
+        let npcs = [];
+        let keys = {};
+        let mouseX = 0, mouseY = 0;
+        let isPointerLocked = false;
+
+        // Player settings
+        const PLAYER_SPEED = 0.15;
+        const PLAYER_SPRINT_SPEED = 0.25;
+        const JUMP_FORCE = 0.3;
+        const GRAVITY = 0.015;
+
+        // Initialize game
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 20);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
+
+            // Create world
+            createWorld();
+            
+            // Create player
+            createPlayer();
+            
+            // Create NPCs
+            createNPCs();
+            
+            // Create collectible coins
+            createCoins();
+
+            // Event listeners
+            setupEventListeners();
+
+            // Start render loop
+            animate();
+        }
+
+        function createWorld() {
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x4a7c59 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Block colors
+            const blockColors = [
+                0x8B4513, // Brown
+                0x808080, // Gray
+                0x228B22, // Green
+                0x4169E1, // Blue
+                0xFFD700, // Gold
+                0xFF6347, // Red
+                0x9370DB  // Purple
+            ];
+
+            // Create random buildings/structures
+            for (let i = 0; i < 50; i++) {
+                const x = (Math.random() - 0.5) * 150;
+                const z = (Math.random() - 0.5) * 150;
+                const height = Math.floor(Math.random() * 8) + 1;
+                const color = blockColors[Math.floor(Math.random() * blockColors.length)];
+                
+                for (let y = 0; y < height; y++) {
+                    createBlock(x, y * 2 + 1, z, color);
+                }
+            }
+
+            // Create a central tower
+            for (let y = 0; y < 15; y++) {
+                for (let x = -2; x <= 2; x++) {
+                    for (let z = -2; z <= 2; z++) {
+                        if (Math.abs(x) === 2 || Math.abs(z) === 2 || y === 0 || y === 14) {
+                            createBlock(x * 2, y * 2 + 1, z * 2, 0x8B4513);
+                        }
+                    }
+                }
+            }
+
+            // Trees
+            for (let i = 0; i < 30; i++) {
+                const x = (Math.random() - 0.5) * 180;
+                const z = (Math.random() - 0.5) * 180;
+                createTree(x, z);
+            }
+        }
+
+        function createBlock(x, y, z, color, addToList = true) {
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const material = new THREE.MeshLambertMaterial({ color: color });
+            const block = new THREE.Mesh(geometry, material);
+            block.position.set(x, y, z);
+            block.castShadow = true;
+            block.receiveShadow = true;
+            block.userData.isBlock = true;
+            block.userData.color = color;
+            scene.add(block);
+            if (addToList) blocks.push(block);
+            return block;
+        }
+
+        function createTree(x, z) {
+            // Trunk
+            for (let y = 0; y < 4; y++) {
+                createBlock(x, y * 2 + 1, z, 0x8B4513);
+            }
+            // Leaves
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    for (let dy = 0; dy < 2; dy++) {
+                        createBlock(x + dx * 2, 9 + dy * 2, z + dz * 2, 0x228B22);
+                    }
+                }
+            }
+        }
+
+        function createPlayer() {
+            player = new THREE.Group();
+            
+            // Body
+            const bodyGeometry = new THREE.BoxGeometry(1.5, 2, 1);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x3498db });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 1;
+            body.castShadow = true;
+            player.add(body);
+            
+            // Head
+            const headGeometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const headMaterial = new THREE.MeshLambertMaterial({ color: 0xffdbac });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 2.6;
+            head.castShadow = true;
+            player.add(head);
+            
+            // Eyes
+            const eyeGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.1);
+            const eyeMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.3, 2.7, 0.6);
+            player.add(leftEye);
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.3, 2.7, 0.6);
+            player.add(rightEye);
+            
+            // Arms - используем pivot для вращения от плеча
+            const armGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+            const armMaterial = new THREE.MeshLambertMaterial({ color: 0x3498db });
+            
+            // Левая рука с pivot
+            const leftArmPivot = new THREE.Group();
+            leftArmPivot.position.set(-1, 1.75, 0);
+            playerLeftArm = new THREE.Mesh(armGeometry, armMaterial);
+            playerLeftArm.position.y = -0.75;
+            playerLeftArm.castShadow = true;
+            leftArmPivot.add(playerLeftArm);
+            player.add(leftArmPivot);
+            playerLeftArm = leftArmPivot;
+            
+            // Правая рука с pivot
+            const rightArmPivot = new THREE.Group();
+            rightArmPivot.position.set(1, 1.75, 0);
+            const rightArmMesh = new THREE.Mesh(armGeometry, armMaterial);
+            rightArmMesh.position.y = -0.75;
+            rightArmMesh.castShadow = true;
+            rightArmPivot.add(rightArmMesh);
+            
+            // Меч в правой руке
+            const swordGroup = new THREE.Group();
+            swordGroup.position.set(0, -1.5, 0.5);
+            
+            // Рукоять меча
+            const handleGeometry = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+            const handleMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+            swordGroup.add(handle);
+            
+            // Гарда меча
+            const guardGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.2);
+            const guardMaterial = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+            const guard = new THREE.Mesh(guardGeometry, guardMaterial);
+            guard.position.y = 0.35;
+            swordGroup.add(guard);
+            
+            // Лезвие меча
+            const bladeGeometry = new THREE.BoxGeometry(0.12, 1.8, 0.05);
+            const bladeMaterial = new THREE.MeshLambertMaterial({ color: 0xc0c0c0, emissive: 0x404040 });
+            const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+            blade.position.y = 1.3;
+            blade.castShadow = true;
+            swordGroup.add(blade);
+            
+            // Острие меча
+            const tipGeometry = new THREE.ConeGeometry(0.08, 0.3, 4);
+            const tipMaterial = new THREE.MeshLambertMaterial({ color: 0xc0c0c0 });
+            const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+            tip.position.y = 2.35;
+            swordGroup.add(tip);
+            
+            rightArmPivot.add(swordGroup);
+            playerSword = swordGroup;
+            
+            player.add(rightArmPivot);
+            playerRightArm = rightArmPivot;
+            
+            // Legs - используем pivot для вращения от бедра
+            const legGeometry = new THREE.BoxGeometry(0.6, 1.5, 0.6);
+            const legMaterial = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
+            
+            // Левая нога с pivot
+            const leftLegPivot = new THREE.Group();
+            leftLegPivot.position.set(-0.4, 0, 0);
+            const leftLegMesh = new THREE.Mesh(legGeometry, legMaterial);
+            leftLegMesh.position.y = -0.75;
+            leftLegMesh.castShadow = true;
+            leftLegPivot.add(leftLegMesh);
+            player.add(leftLegPivot);
+            playerLeftLeg = leftLegPivot;
+            
+            // Правая нога с pivot
+            const rightLegPivot = new THREE.Group();
+            rightLegPivot.position.set(0.4, 0, 0);
+            const rightLegMesh = new THREE.Mesh(legGeometry, legMaterial);
+            rightLegMesh.position.y = -0.75;
+            rightLegMesh.castShadow = true;
+            rightLegPivot.add(rightLegMesh);
+            player.add(rightLegPivot);
+            playerRightLeg = rightLegPivot;
+            
+            player.position.set(15, 5, 15);
+            scene.add(player);
+            
+            playerVelocity = new THREE.Vector3();
+            playerOnGround = false;
+        }
+
+        function createNPCs() {
+            const npcColors = [0xe74c3c, 0x9b59b6, 0xf39c12, 0x1abc9c];
+            
+            for (let i = 0; i < 5; i++) {
+                const npc = new THREE.Group();
+                const color = npcColors[i % npcColors.length];
+                
+                // Body
+                const bodyGeometry = new THREE.BoxGeometry(1.5, 2, 1);
+                const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                body.position.y = 1;
+                body.castShadow = true;
+                npc.add(body);
+                
+                // Head
+                const headGeometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+                const headMaterial = new THREE.MeshLambertMaterial({ color: 0xffdbac });
+                const head = new THREE.Mesh(headGeometry, headMaterial);
+                head.position.y = 2.6;
+                head.castShadow = true;
+                npc.add(head);
+                
+                // Arms
+                const armGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+                const armMaterial = new THREE.MeshLambertMaterial({ color: color });
+                
+                const leftArmPivot = new THREE.Group();
+                leftArmPivot.position.set(-1, 1.75, 0);
+                const leftArmMesh = new THREE.Mesh(armGeometry, armMaterial);
+                leftArmMesh.position.y = -0.75;
+                leftArmMesh.castShadow = true;
+                leftArmPivot.add(leftArmMesh);
+                npc.add(leftArmPivot);
+                
+                const rightArmPivot = new THREE.Group();
+                rightArmPivot.position.set(1, 1.75, 0);
+                const rightArmMesh = new THREE.Mesh(armGeometry, armMaterial);
+                rightArmMesh.position.y = -0.75;
+                rightArmMesh.castShadow = true;
+                rightArmPivot.add(rightArmMesh);
+                npc.add(rightArmPivot);
+                
+                // Legs
+                const legGeometry = new THREE.BoxGeometry(0.6, 1.5, 0.6);
+                const legMaterial = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
+                
+                const leftLegPivot = new THREE.Group();
+                leftLegPivot.position.set(-0.4, 0, 0);
+                const leftLegMesh = new THREE.Mesh(legGeometry, legMaterial);
+                leftLegMesh.position.y = -0.75;
+                leftLegMesh.castShadow = true;
+                leftLegPivot.add(leftLegMesh);
+                npc.add(leftLegPivot);
+                
+                const rightLegPivot = new THREE.Group();
+                rightLegPivot.position.set(0.4, 0, 0);
+                const rightLegMesh = new THREE.Mesh(legGeometry, legMaterial);
+                rightLegMesh.position.y = -0.75;
+                rightLegMesh.castShadow = true;
+                rightLegPivot.add(rightLegMesh);
+                npc.add(rightLegPivot);
+                
+                // Random position
+                npc.position.set(
+                    (Math.random() - 0.5) * 80,
+                    1.5,
+                    (Math.random() - 0.5) * 80
+                );
+                
+                npc.userData.direction = Math.random() * Math.PI * 2;
+                npc.userData.speed = 0.02 + Math.random() * 0.03;
+                npc.userData.changeTimer = 0;
+                npc.userData.walkAnimation = Math.random() * Math.PI * 2;
+                npc.userData.health = 100;
+                npc.userData.leftLeg = leftLegPivot;
+                npc.userData.rightLeg = rightLegPivot;
+                npc.userData.leftArm = leftArmPivot;
+                npc.userData.rightArm = rightArmPivot;
+                
+                scene.add(npc);
+                npcs.push(npc);
+            }
+        }
+
+        function createCoins() {
+            // Монеты рядом с игроком (для начала)
+            const nearPositions = [
+                {x: 20, z: 15}, {x: 10, z: 20}, {x: 25, z: 25},
+                {x: 5, z: 10}, {x: 18, z: 8}, {x: 12, z: 18}
+            ];
+            
+            for (const pos of nearPositions) {
+                createCoin(pos.x, 2, pos.z);
+            }
+            
+            // Остальные монеты по карте
+            for (let i = 0; i < 40; i++) {
+                createCoin(
+                    (Math.random() - 0.5) * 150,
+                    2 + Math.random() * 3,
+                    (Math.random() - 0.5) * 150
+                );
+            }
+        }
+        
+        function createCoin(x, y, z) {
+            const coinGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.15, 16);
+            const coinMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xffd700, 
+                emissive: 0xffa500, 
+                emissiveIntensity: 0.5 
+            });
+            const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+            
+            coin.position.set(x, y, z);
+            coin.rotation.x = Math.PI / 2;
+            coin.userData.isCoin = true;
+            coin.userData.baseY = y;
+            
+            scene.add(coin);
+            coins.push(coin);
+            return coin;
+        }
+
+        function setupEventListeners() {
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                
+                // Inventory selection
+                if (e.code >= 'Digit1' && e.code <= 'Digit5') {
+                    const slot = parseInt(e.code.replace('Digit', '')) - 1;
+                    selectInventorySlot(slot);
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            // Mouse - стандартное управление: вправо = поворот вправо, вверх = смотреть вверх
+            document.addEventListener('mousemove', (e) => {
+                if (isPointerLocked) {
+                    mouseX -= e.movementX * 0.002;
+                    mouseY = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, mouseY - e.movementY * 0.002));
+                }
+            });
+            
+            document.addEventListener('click', () => {
+                if (gameState.started && !isPointerLocked) {
+                    document.body.requestPointerLock();
+                }
+            });
+            
+            document.addEventListener('pointerlockchange', () => {
+                isPointerLocked = document.pointerLockElement === document.body;
+            });
+            
+            // Mouse buttons for block interaction and attack
+            document.addEventListener('mousedown', (e) => {
+                if (!isPointerLocked) return;
+                
+                if (e.button === 0) { // Left click - attack or destroy
+                    if (gameState.selectedSlot === 4) {
+                        // Меч выбран - атака
+                        attackWithSword();
+                    } else {
+                        destroyBlock();
+                    }
+                } else if (e.button === 2) { // Right click - place
+                    placeBlock();
+                }
+            });
+            
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Start button
+            document.getElementById('start-button').addEventListener('click', startGame);
+        }
+
+        function selectInventorySlot(slot) {
+            gameState.selectedSlot = slot;
+            document.querySelectorAll('.inventory-slot').forEach((el, i) => {
+                el.classList.toggle('active', i === slot);
+            });
+        }
+
+        function destroyBlock() {
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const intersects = raycaster.intersectObjects(blocks);
+            if (intersects.length > 0 && intersects[0].distance < 10) {
+                const block = intersects[0].object;
+                scene.remove(block);
+                blocks = blocks.filter(b => b !== block);
+                showMessage('Блок разрушен!');
+            }
+        }
+
+        function placeBlock() {
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const intersects = raycaster.intersectObjects(blocks);
+            if (intersects.length > 0 && intersects[0].distance < 10) {
+                const point = intersects[0].point;
+                const normal = intersects[0].face.normal;
+                
+                const newPos = new THREE.Vector3(
+                    Math.round(point.x + normal.x),
+                    Math.round(point.y + normal.y),
+                    Math.round(point.z + normal.z)
+                );
+                
+                // Snap to grid
+                newPos.x = Math.round(newPos.x / 2) * 2;
+                newPos.y = Math.round(newPos.y / 2) * 2;
+                newPos.z = Math.round(newPos.z / 2) * 2;
+                
+                const colors = [0x8B4513, 0x808080, 0x228B22, 0x00ffff, 0xff0000];
+                createBlock(newPos.x, newPos.y, newPos.z, colors[gameState.selectedSlot]);
+                showMessage('Блок установлен!');
+            }
+        }
+
+        function attackWithSword() {
+            if (isAttacking) return;
+            
+            isAttacking = true;
+            attackAnimation = 0;
+            
+            // Проверяем попадание по NPC
+            const attackRange = 4;
+            for (let i = npcs.length - 1; i >= 0; i--) {
+                const npc = npcs[i];
+                const dist = player.position.distanceTo(npc.position);
+                
+                if (dist < attackRange) {
+                    // Проверяем что NPC перед игроком
+                    const toNpc = new THREE.Vector3().subVectors(npc.position, player.position).normalize();
+                    const playerDir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
+                    const dot = toNpc.dot(playerDir);
+                    
+                    if (dot > 0.3) { // NPC примерно перед игроком
+                        // Наносим урон
+                        npc.userData.health = (npc.userData.health || 100) - 35;
+                        
+                        // Отталкиваем NPC
+                        npc.position.x += toNpc.x * 2;
+                        npc.position.z += toNpc.z * 2;
+                        
+                        // Эффект попадания - красная вспышка
+                        npc.children.forEach(child => {
+                            if (child.material) {
+                                const origColor = child.material.color.getHex();
+                                child.material.color.setHex(0xff0000);
+                                setTimeout(() => child.material.color.setHex(origColor), 100);
+                            }
+                        });
+                        
+                        if (npc.userData.health <= 0) {
+                            // NPC убит
+                            scene.remove(npc);
+                            npcs.splice(i, 1);
+                            gameState.coins += 25;
+                            document.getElementById('coins-display').textContent = gameState.coins;
+                            showMessage('⚔️ +25 монет за победу!');
+                        } else {
+                            showMessage('⚔️ Удар! Здоровье: ' + npc.userData.health);
+                        }
+                    }
+                }
+            }
+        }
+
+        function showMessage(text) {
+            const messagesContainer = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            msg.textContent = text;
+            messagesContainer.appendChild(msg);
+            
+            setTimeout(() => msg.remove(), 3000);
+        }
+
+        function startGame() {
+            gameState.started = true;
+            document.getElementById('start-screen').style.display = 'none';
+            document.body.requestPointerLock();
+            showMessage('Добро пожаловать в Block World!');
+        }
+
+        function updatePlayer() {
+            if (!gameState.started) return;
+            
+            const speed = keys['ShiftLeft'] ? PLAYER_SPRINT_SPEED : PLAYER_SPEED;
+            
+            // Вычисляем направление камеры (куда она смотрит)
+            const cameraDirection = new THREE.Vector3(
+                Math.sin(mouseX),
+                0,
+                Math.cos(mouseX)
+            );
+            
+            // Вектор вправо от камеры
+            const cameraRight = new THREE.Vector3(
+                Math.sin(mouseX + Math.PI / 2),
+                0,
+                Math.cos(mouseX + Math.PI / 2)
+            );
+            
+            // Движение относительно камеры
+            isWalking = false;
+            if (keys['KeyW']) {
+                player.position.x += cameraDirection.x * speed;
+                player.position.z += cameraDirection.z * speed;
+                isWalking = true;
+            }
+            if (keys['KeyS']) {
+                player.position.x -= cameraDirection.x * speed;
+                player.position.z -= cameraDirection.z * speed;
+                isWalking = true;
+            }
+            if (keys['KeyA']) {
+                player.position.x += cameraRight.x * speed;
+                player.position.z += cameraRight.z * speed;
+                isWalking = true;
+            }
+            if (keys['KeyD']) {
+                player.position.x -= cameraRight.x * speed;
+                player.position.z -= cameraRight.z * speed;
+                isWalking = true;
+            }
+            
+            // Анимация атаки мечом
+            if (isAttacking) {
+                attackAnimation += 0.15;
+                
+                if (attackAnimation < 1) {
+                    // Замах назад и вверх
+                    playerRightArm.rotation.x = -Math.PI * 0.8 * attackAnimation;
+                    playerRightArm.rotation.z = -0.3 * attackAnimation;
+                } else if (attackAnimation < 2) {
+                    // Удар вниз
+                    const t = attackAnimation - 1;
+                    playerRightArm.rotation.x = -Math.PI * 0.8 + Math.PI * 1.2 * t;
+                    playerRightArm.rotation.z = -0.3 + 0.3 * t;
+                } else {
+                    // Конец анимации
+                    isAttacking = false;
+                    playerRightArm.rotation.x = 0;
+                    playerRightArm.rotation.z = 0;
+                }
+            }
+            // Анимация ходьбы - ноги и руки
+            else if (isWalking) {
+                const animSpeed = keys['ShiftLeft'] ? 0.3 : 0.2;
+                walkAnimation += animSpeed;
+                const swing = Math.sin(walkAnimation) * 0.8;
+                
+                // Ноги двигаются противоположно
+                playerLeftLeg.rotation.x = swing;
+                playerRightLeg.rotation.x = -swing;
+                
+                // Руки двигаются противоположно ногам
+                playerLeftArm.rotation.x = -swing;
+                playerRightArm.rotation.x = swing;
+            } else {
+                // Плавно возвращаем в исходное положение
+                playerLeftLeg.rotation.x *= 0.8;
+                playerRightLeg.rotation.x *= 0.8;
+                playerLeftArm.rotation.x *= 0.8;
+                playerRightArm.rotation.x *= 0.8;
+            }
+            
+            // Поворот модели игрока в направлении камеры
+            player.rotation.y = mouseX;
+            
+            // Jump
+            if (keys['Space'] && playerOnGround) {
+                playerVelocity.y = JUMP_FORCE;
+                playerOnGround = false;
+            }
+            
+            // Gravity
+            playerVelocity.y -= GRAVITY;
+            player.position.y += playerVelocity.y;
+            
+            // Ground collision
+            if (player.position.y < 1.5) {
+                player.position.y = 1.5;
+                playerVelocity.y = 0;
+                playerOnGround = true;
+            }
+            
+            // Block collision (simple)
+            for (const block of blocks) {
+                const dist = player.position.distanceTo(block.position);
+                if (dist < 2) {
+                    // Push player away
+                    const pushDir = new THREE.Vector3()
+                        .subVectors(player.position, block.position)
+                        .normalize();
+                    player.position.add(pushDir.multiplyScalar(0.1));
+                    
+                    // Check if landing on top
+                    if (player.position.y > block.position.y + 0.5 && playerVelocity.y < 0) {
+                        player.position.y = block.position.y + 2.5;
+                        playerVelocity.y = 0;
+                        playerOnGround = true;
+                    }
+                }
+            }
+            
+            // Камера позади игрока
+            const camDist = 8;
+            camera.position.x = player.position.x - Math.sin(mouseX) * camDist * Math.cos(mouseY);
+            camera.position.y = player.position.y + 3 - Math.sin(mouseY) * camDist;
+            camera.position.z = player.position.z - Math.cos(mouseX) * camDist * Math.cos(mouseY);
+            camera.lookAt(player.position.x, player.position.y + 2, player.position.z);
+        }
+
+        function updateNPCs() {
+            for (const npc of npcs) {
+                npc.userData.changeTimer++;
+                
+                if (npc.userData.changeTimer > 200) {
+                    npc.userData.direction = Math.random() * Math.PI * 2;
+                    npc.userData.changeTimer = 0;
+                }
+                
+                npc.position.x += Math.sin(npc.userData.direction) * npc.userData.speed;
+                npc.position.z += Math.cos(npc.userData.direction) * npc.userData.speed;
+                npc.rotation.y = npc.userData.direction;
+                
+                // Анимация ходьбы
+                npc.userData.walkAnimation += npc.userData.speed * 5;
+                const swing = Math.sin(npc.userData.walkAnimation) * 0.6;
+                
+                npc.userData.leftLeg.rotation.x = swing;
+                npc.userData.rightLeg.rotation.x = -swing;
+                npc.userData.leftArm.rotation.x = -swing;
+                npc.userData.rightArm.rotation.x = swing;
+                
+                // Keep in bounds
+                if (Math.abs(npc.position.x) > 90 || Math.abs(npc.position.z) > 90) {
+                    npc.userData.direction += Math.PI;
+                }
+            }
+        }
+
+        function updateCoins() {
+            const time = Date.now() * 0.003;
+            
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                
+                // Floating animation
+                coin.position.y = coin.userData.baseY + Math.sin(time + i) * 0.5;
+                coin.rotation.z += 0.05;
+                
+                // Collection - радиус сбора 3 единицы
+                if (player && coin.position.distanceTo(player.position) < 3) {
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                    gameState.coins += 10;
+                    document.getElementById('coins-display').textContent = gameState.coins;
+                    showMessage('🪙 +10 монет!');
+                    
+                    // Визуальный эффект сбора
+                    const coinsDisplay = document.getElementById('coins-display');
+                    coinsDisplay.style.transform = 'scale(1.3)';
+                    setTimeout(() => coinsDisplay.style.transform = 'scale(1)', 200);
+                }
+            }
+        }
+
+        function updateMinimap() {
+            const canvas = document.getElementById('minimap-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 150;
+            canvas.height = 150;
+            
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 150, 150);
+            
+            // Draw blocks
+            ctx.fillStyle = '#666';
+            for (const block of blocks) {
+                const x = 75 + block.position.x * 0.7;
+                const y = 75 + block.position.z * 0.7;
+                if (x > 0 && x < 150 && y > 0 && y < 150) {
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
+                }
+            }
+            
+            // Draw NPCs
+            ctx.fillStyle = '#e74c3c';
+            for (const npc of npcs) {
+                const x = 75 + npc.position.x * 0.7;
+                const y = 75 + npc.position.z * 0.7;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw coins
+            ctx.fillStyle = '#ffd700';
+            for (const coin of coins) {
+                const x = 75 + coin.position.x * 0.7;
+                const y = 75 + coin.position.z * 0.7;
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw player
+            if (player) {
+                ctx.fillStyle = '#00ff88';
+                const px = 75 + player.position.x * 0.7;
+                const py = 75 + player.position.z * 0.7;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Direction indicator
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px + Math.sin(mouseX) * 10, py + Math.cos(mouseX) * 10);
+                ctx.stroke();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updatePlayer();
+            updateNPCs();
+            updateCoins();
+            updateMinimap();
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
