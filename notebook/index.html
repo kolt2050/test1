@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Записная книжка</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <h1>Заметки</h1>
+                <button id="add-btn" class="icon-btn" title="Добавить документ">+</button>
+            </header>
+            <div id="doc-list" class="doc-list">
+                <!-- Заголовки документов будут здесь -->
+            </div>
+            <footer class="sidebar-footer">
+                <button id="import-btn" class="secondary-btn" style="margin-bottom: 10px;">Импорт из TXT</button>
+                <button id="export-btn" class="secondary-btn">Экспорт в TXT</button>
+            </footer>
+        </aside>
+
+        <main class="editor-area">
+            <div id="no-selection" class="no-selection">
+                <p>Выберите документ или создайте новый</p>
+            </div>
+            <div id="active-editor" class="active-editor hidden">
+                <div class="editor-header">
+                    <input type="text" id="doc-title-input" placeholder="Заголовок документа...">
+                    <button id="delete-btn" class="danger-btn" title="Удалить документ">Удалить</button>
+                </div>
+                <textarea id="doc-content-input" placeholder="Введите содержание документа..."></textarea>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
