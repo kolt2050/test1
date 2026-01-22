@@ -33,14 +33,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Functions
-    function createNewDoc() {
+    function createNewDoc(parentId = null) {
         const newDoc = {
             id: Date.now().toString(),
-            title: 'Новая заметка',
+            title: parentId ? 'Новая подзаметка' : 'Новая заметка',
             content: '',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            parentId: parentId,
+            expanded: true
         };
-        documents.unshift(newDoc);
+
+        if (parentId) {
+            const parent = documents.find(d => d.id === parentId);
+            if (parent) parent.expanded = true;
+            // Добавляем после родителя или в конец (для простоты в конец массива, 
+            // но при рендеринге дерево соберется правильно)
+            documents.push(newDoc);
+        } else {
+            documents.unshift(newDoc);
+        }
+
         saveAndRender();
         selectDoc(newDoc.id);
     }
@@ -66,22 +78,27 @@ document.addEventListener('DOMContentLoaded', () => {
             documents[docIndex][field] = value;
             documents[docIndex].updatedAt = new Date().toISOString();
             saveToLocalStorage();
-            updateListItem(activeDocId, field, value);
-        }
-    }
-
-    function updateListItem(id, field, value) {
-        const item = docListEl.querySelector(`[data-id="${id}"]`);
-        if (item && field === 'title') {
-            item.querySelector('.title').textContent = value || 'Без заголовка';
+            // Для иерархии лучше делать полный рендер или точечно обновлять span
+            const item = docListEl.querySelector(`[data-id="${activeDocId}"]`);
+            if (item && field === 'title') {
+                item.querySelector('.title').textContent = value || 'Без заголовка';
+            }
         }
     }
 
     function deleteActiveDoc() {
         if (!activeDocId) return;
 
-        if (confirm('Вы уверены, что хотите удалить этот документ?')) {
-            documents = documents.filter(d => d.id !== activeDocId);
+        const hasChildren = documents.some(d => d.parentId === activeDocId);
+        const msg = hasChildren
+            ? 'Этот документ содержит подзаметки. Удаление приведет к удалению всей ветки. Продолжить?'
+            : 'Вы уверены, что хотите удалить этот документ?';
+
+        if (confirm(msg)) {
+            const idsToDelete = getAllChildIds(activeDocId);
+            idsToDelete.push(activeDocId);
+
+            documents = documents.filter(d => !idsToDelete.includes(d.id));
             activeDocId = null;
 
             activeEditorEl.classList.add('hidden');
@@ -91,24 +108,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getAllChildIds(parentId) {
+        let childIds = [];
+        const children = documents.filter(d => d.parentId === parentId);
+        children.forEach(child => {
+            childIds.push(child.id);
+            childIds = childIds.concat(getAllChildIds(child.id));
+        });
+        return childIds;
+    }
+
     function saveToLocalStorage() {
         localStorage.setItem('notebook_docs', JSON.stringify(documents));
     }
 
     function renderDocList() {
         docListEl.innerHTML = '';
-        documents.forEach(doc => {
+        const roots = documents.filter(d => !d.parentId);
+        renderTree(roots, 0);
+    }
+
+    function renderTree(items, level) {
+        items.forEach(doc => {
+            const children = documents.filter(d => d.parentId === doc.id);
+            const hasChildren = children.length > 0;
+
             const item = document.createElement('div');
-            item.className = `doc-item ${doc.id === activeDocId ? 'active' : ''}`;
+            item.className = `doc-item ${doc.id === activeDocId ? 'active' : ''} ${doc.expanded ? 'expanded' : ''} ${!hasChildren ? 'no-children' : ''}`;
             item.dataset.id = doc.id;
+            item.style.paddingLeft = `${10 + (level * 20)}px`;
 
             item.innerHTML = `
+                <span class="chevron">▶</span>
                 <span class="title">${doc.title || 'Без заголовка'}</span>
+                <button class="add-sub-btn" title="Добавить подзаметку">+</button>
             `;
+
+            // Обработчики кликов
+            item.querySelector('.chevron').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleExpand(doc.id);
+            });
+
+            item.querySelector('.add-sub-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                createNewDoc(doc.id);
+            });
 
             item.addEventListener('click', () => selectDoc(doc.id));
             docListEl.appendChild(item);
+
+            if (hasChildren && doc.expanded) {
+                renderTree(children, level + 1);
+            }
         });
+    }
+
+    function toggleExpand(id) {
+        const doc = documents.find(d => d.id === id);
+        if (doc) {
+            doc.expanded = !doc.expanded;
+            saveAndRender();
+        }
     }
 
     function saveAndRender() {
@@ -123,12 +184,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let exportText = '--- ЭКСПОРТ ВСЕХ ЗАМЕТОК ---\r\n\r\n';
-        documents.forEach(doc => {
-            exportText += `ЗАГОЛОВОК: ${doc.title}\r\n`;
-            exportText += `ДАТА: ${new Date(doc.updatedAt).toLocaleString('ru-RU')}\r\n`;
-            exportText += `СОДЕРЖАНИЕ:\r\n${doc.content}\r\n`;
-            exportText += `\r\n${'='.repeat(30)}\r\n\r\n`;
-        });
+
+        function exportNodes(nodes, level) {
+            nodes.forEach(doc => {
+                const indent = '  '.repeat(level);
+                exportText += `${indent}ЗАГОЛОВОК: ${doc.title}\r\n`;
+                exportText += `${indent}ДАТА: ${new Date(doc.updatedAt).toLocaleString('ru-RU')}\r\n`;
+                // Содержание экспортируем без отступов для удобства чтения, 
+                // но заголовок служит маркером начала нового документа
+                exportText += `${indent}СОДЕРЖАНИЕ:\r\n${doc.content}\r\n`;
+                exportText += `\r\n${'='.repeat(30)}\r\n\r\n`;
+
+                const children = documents.filter(d => d.parentId === doc.id);
+                if (children.length > 0) {
+                    exportNodes(children, level + 1);
+                }
+            });
+        }
+
+        const roots = documents.filter(d => !d.parentId);
+        exportNodes(roots, 0);
 
         const filename = `notebook_export_${new Date().toISOString().split('T')[0]}.txt`;
 
@@ -187,37 +262,71 @@ document.addEventListener('DOMContentLoaded', () => {
             // Используем жадный поиск разделителей
             const docSections = cleanText.split(/={10,}/);
             const importedDocs = [];
+            const levelStack = []; // Стек родительских ID для отслеживания иерархии
 
             docSections.forEach(section => {
-                const trimmedSection = section.trim();
-                if (!trimmedSection) return;
+                const lines = section.split(/[\r\n]+/);
+                let titleLine = '';
+                let titleLineIndex = -1;
 
-                // Используем регулярные выражения с флагом 'm' (multiline) для поиска полей
-                const titleMatch = trimmedSection.match(/^ЗАГОЛОВОК:\s*(.*)$/m);
-                const dateMatch = trimmedSection.match(/^ДАТА:\s*(.*)$/m);
+                // Находим строку с заголовком и определяем уровень отступа
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].includes('ЗАГОЛОВОК:')) {
+                        titleLine = lines[i];
+                        titleLineIndex = i;
+                        break;
+                    }
+                }
 
-                // Ищем начало содержания
-                const contentMatch = trimmedSection.match(/^СОДЕРЖАНИЕ:\s*([\s\S]*)$/m);
+                if (titleLineIndex !== -1) {
+                    const indentMatch = titleLine.match(/^(\s*)/);
+                    const indentLevel = indentMatch ? Math.floor(indentMatch[1].length / 2) : 0;
+                    const title = titleLine.replace(/.*ЗАГОЛОВОК:\s*/, '').trim();
 
-                if (titleMatch && contentMatch) {
-                    const title = titleMatch[1].trim();
-                    const noteContent = contentMatch[1].trim();
+                    // Ищем дату
+                    let dateStr = '';
+                    for (let i = titleLineIndex + 1; i < lines.length; i++) {
+                        if (lines[i].includes('ДАТА:')) {
+                            dateStr = lines[i].replace(/.*ДАТА:\s*/, '').trim();
+                            break;
+                        }
+                    }
+
+                    // Ищем содержание (все что после строки СОДЕРЖАНИЕ до конца секции)
+                    let noteContent = '';
+                    const contentStartIdx = section.indexOf('СОДЕРЖАНИЕ:');
+                    if (contentStartIdx !== -1) {
+                        const contentPart = section.substring(contentStartIdx + 11);
+                        noteContent = contentPart.trim();
+                    }
 
                     let parsedDate = new Date();
-                    if (dateMatch) {
-                        const dateStr = dateMatch[1].trim();
-                        const attemptDate = new Date(dateStr);
+                    if (dateStr) {
+                        const attemptDate = new Date(dateStr.replace(/(\d{2})\.(\d{2})\.(\d{4}),\s*(\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                         if (!isNaN(attemptDate.getTime())) {
                             parsedDate = attemptDate;
                         }
                     }
 
+                    const newId = (Date.now() + importedDocs.length).toString();
+
+                    // Определяем parentId на основе стека уровней
+                    while (levelStack.length > indentLevel) {
+                        levelStack.pop();
+                    }
+                    const parentId = levelStack.length > 0 ? levelStack[levelStack.length - 1] : null;
+
                     importedDocs.push({
-                        id: (Date.now() + importedDocs.length).toString(),
+                        id: newId,
                         title: title || 'Безымянная заметка',
                         content: noteContent,
-                        updatedAt: parsedDate.toISOString()
+                        updatedAt: parsedDate.toISOString(),
+                        parentId: parentId,
+                        expanded: true
                     });
+
+                    // Добавляем текущий ID в стек для возможных детей
+                    levelStack[indentLevel] = newId;
                 }
             });
 

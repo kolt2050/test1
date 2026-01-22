@@ -61,12 +61,16 @@ body {
 }
 
 .doc-item {
-    padding: 8px 15px;
+    padding: 8px 10px;
     margin-bottom: 2px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
 }
 
 .doc-item:hover {
@@ -78,12 +82,46 @@ body {
     border-color: var(--accent-color);
 }
 
+.doc-item .chevron {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.doc-item.expanded .chevron {
+    transform: rotate(90deg);
+}
+
 .doc-item .title {
+    flex: 1;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: block;
+}
+
+.add-sub-btn {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 5px;
+    transition: opacity 0.2s ease;
+}
+
+.doc-item:hover .add-sub-btn {
+    opacity: 1;
+}
+
+.doc-item.no-children .chevron {
+    visibility: hidden;
 }
 
 
