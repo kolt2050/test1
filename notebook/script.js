@@ -30,11 +30,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnEditLink = document.getElementById('btn-edit-link');
     const btnUnlink = document.getElementById('btn-unlink');
     let currentLink = null;
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('notebook_theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+    }
 
     // Initialize
     renderDocList();
 
     // Event Listeners
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const newTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+            localStorage.setItem('notebook_theme', newTheme);
+        });
+    }
+
     addBtn.addEventListener('click', () => createNewDoc());
     // Direct listener for delete button
     if (deleteBtn) {
