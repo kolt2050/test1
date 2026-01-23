@@ -220,7 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderDocList() {
         docListEl.innerHTML = '';
-        const roots = documents.filter(d => !d.parentId);
+        const roots = documents
+            .filter(d => !d.parentId)
+            .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         renderTree(roots, 0);
     }
 
@@ -254,7 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
             docListEl.appendChild(item);
 
             if (hasChildren && doc.expanded) {
-                renderTree(children, level + 1);
+                const sortedChildren = children.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+                renderTree(sortedChildren, level + 1);
             }
         });
     }
