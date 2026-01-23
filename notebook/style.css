@@ -180,11 +180,19 @@ body:not(.dark-theme) .moon-icon {
     display: flex;
     flex-direction: column;
     height: 100%;
+    /* No padding here, padding goes to scroll container or toolbar */
+}
+
+.editor-content-scroll {
+    flex: 1;
+    overflow-y: auto;
     padding: 20px 40px;
+    min-height: 0;
 }
 
 /* Toolbar Styling */
 .toolbar-wrapper {
+    padding: 20px 40px 0 40px;
     margin-bottom: 20px;
 }
 
@@ -291,11 +299,6 @@ button {
 #doc-title-input {
     width: 100%;
     padding: 10px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    border: none;
-    background: transparent;
-    outline: none;
     font-size: 2rem;
     font-weight: 600;
     border: none;
@@ -304,6 +307,7 @@ button {
     margin-bottom: 10px;
     outline: none;
     font-family: 'Inter', sans-serif;
+    text-align: center;
 }
 
 .paper {
