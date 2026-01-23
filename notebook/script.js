@@ -453,8 +453,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function processNodes(nodes, level) {
             nodes.forEach(doc => {
-                const titleTag = level === 0 ? 'h1' : 'h2';
-                combinedContent += `<div class="exported-doc">
+                const titleTag = level < 6 ? `h${level + 1}` : 'h6';
+                combinedContent += `<div class="exported-doc" data-id="${doc.id}" data-parent-id="${doc.parentId || ''}" data-updated-at="${doc.updatedAt}">
                     <${titleTag}>${doc.title}</${titleTag}>
                     <p><small>Обновлено: ${new Date(doc.updatedAt).toLocaleString('ru-RU')}</small></p>
                     <div class="doc-body">${doc.content}</div>
@@ -485,21 +485,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 const html = event.target.result;
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                const savedContent = doc.querySelector('.paper');
 
-                if (confirm('Импортировать содержимое как новую заметку?')) {
-                    const newDoc = {
-                        id: Date.now().toString(),
-                        title: doc.title || file.name.replace('.html', ''),
-                        content: savedContent ? savedContent.innerHTML : doc.body.innerHTML,
-                        updatedAt: new Date().toISOString(),
-                        parentId: null,
-                        expanded: true
-                    };
-                    documents.unshift(newDoc);
-                    saveAndRender();
-                    selectDoc(newDoc.id);
+                // Find all exported documents
+                const exportedDocs = doc.querySelectorAll('.exported-doc');
+
+                if (exportedDocs.length === 0) {
+                    // Fallback for single document files (the old format or document app format)
+                    const paperContent = doc.querySelector('.paper');
+                    const content = paperContent ? paperContent.innerHTML : doc.body.innerHTML;
+                    const title = doc.title || file.name.replace('.html', '');
+
+                    showConfirmModal('Импортировать этот файл как новую заметку?', () => {
+                        const newDoc = {
+                            id: Date.now().toString(),
+                            title: title,
+                            content: content,
+                            updatedAt: new Date().toISOString(),
+                            parentId: null,
+                            expanded: true
+                        };
+                        documents.unshift(newDoc);
+                        saveAndRender();
+                        selectDoc(newDoc.id);
+                    });
+                    return;
                 }
+
+                // Multiple documents found
+                showConfirmModal('Это действие удалит текущие заметки и заменит их данными из файла. Продолжить?', () => {
+                    documents = []; // Clear current session
+
+                    exportedDocs.forEach((el, index) => {
+                        const id = el.dataset.id || (Date.now() + index).toString();
+                        const parentId = el.dataset.parentId || null;
+                        const updatedAt = el.dataset.updatedAt || new Date().toISOString();
+                        const titleEl = el.querySelector('h1, h2, h3, h4, h5, h6');
+                        const title = titleEl ? titleEl.textContent : 'Без заголовка';
+                        const bodyEl = el.querySelector('.doc-body');
+                        const content = bodyEl ? bodyEl.innerHTML : el.innerHTML;
+
+                        documents.push({
+                            id: id,
+                            title: title,
+                            content: content,
+                            updatedAt: updatedAt,
+                            parentId: parentId === '' ? null : parentId,
+                            expanded: true
+                        });
+                    });
+
+                    saveAndRender();
+                    if (documents.length > 0) {
+                        selectDoc(documents[0].id);
+                    }
+                    alert('Импорт успешно завершен!');
+                });
             };
             reader.readAsText(file);
         };
