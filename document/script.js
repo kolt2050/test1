@@ -4,8 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnItalic = document.getElementById('btn-italic');
     const btnUnderline = document.getElementById('btn-underline');
     const btnImage = document.getElementById('btn-image');
-    const btnPrint = document.getElementById('btn-print');
+    const btnSave = document.getElementById('btn-save');
+    const btnOpen = document.getElementById('btn-open');
     const imageInput = document.getElementById('image-input');
+    const fileInput = document.getElementById('file-input');
 
     // Rich Text Commands
     const execCommand = (command, value = null) => {
@@ -16,111 +18,18 @@ document.addEventListener('DOMContentLoaded', () => {
     btnBold.addEventListener('click', () => execCommand('bold'));
     btnItalic.addEventListener('click', () => execCommand('italic'));
     btnUnderline.addEventListener('click', () => execCommand('underline'));
-    document.getElementById('btn-link').addEventListener('click', () => {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0 && !selection.isCollapsed) {
-            // ВАЖНО: Сохраняем range ДО вызова prompt, т.к. prompt сбрасывает выделение
-            const savedRange = selection.getRangeAt(0).cloneRange();
-
-            let url = prompt('Введите URL:', 'https://');
-
-            if (url && url !== 'https://') {
-                // Добавляем протокол если его нет
-                if (!/^https?:\/\//i.test(url)) {
-                    url = 'https://' + url;
-                }
-
-                // Восстанавливаем выделение
-                selection.removeAllRanges();
-                selection.addRange(savedRange);
-
-                // Создаём ссылку вручную (более надежно чем execCommand)
-                const link = document.createElement('a');
-                link.href = url;
-                link.target = '_blank';
-                link.appendChild(savedRange.extractContents());
-                savedRange.insertNode(link);
-
-                // Перемещаем курсор после ссылки
-                selection.removeAllRanges();
-                const newRange = document.createRange();
-                newRange.setStartAfter(link);
-                newRange.collapse(true);
-                selection.addRange(newRange);
-
-                editor.focus();
-            }
-        } else {
-            alert('Пожалуйста, сначала выделите текст, который хотите сделать ссылкой.');
-        }
-    });
-    document.getElementById('btn-clear').addEventListener('click', () => execCommand('removeFormat'));
-
-    // Heading Commands
-    document.getElementById('btn-h1').addEventListener('click', () => execCommand('formatBlock', 'H1'));
-    document.getElementById('btn-h2').addEventListener('click', () => execCommand('formatBlock', 'H2'));
-    document.getElementById('btn-h3').addEventListener('click', () => execCommand('formatBlock', 'H3'));
 
     // Alignment Commands
     document.getElementById('btn-left').addEventListener('click', () => execCommand('justifyLeft'));
     document.getElementById('btn-center').addEventListener('click', () => execCommand('justifyCenter'));
     document.getElementById('btn-right').addEventListener('click', () => execCommand('justifyRight'));
 
-    // Line Height Handling
-    document.getElementById('select-line-height').addEventListener('change', (e) => {
-        const height = e.target.value;
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-
-            // Helper to get all block elements within the range
-            const getSelectedBlocks = () => {
-                const blocks = new Set();
-                let container = range.commonAncestorContainer;
-                if (container.nodeType !== 1) container = container.parentNode;
-
-                // Find all elements that might be blocks and intersect the range
-                const allElements = container.querySelectorAll('*');
-                allElements.forEach(el => {
-                    if (['P', 'DIV', 'H1', 'H2', 'H3', 'LI'].includes(el.tagName)) {
-                        if (selection.containsNode(el, true)) {
-                            blocks.add(el);
-                        }
-                    }
-                });
-
-                // Also check if the container itself is a block and contains the selection
-                let parent = container;
-                while (parent && parent !== editor) {
-                    if (['P', 'DIV', 'H1', 'H2', 'H3', 'LI'].includes(parent.tagName)) {
-                        blocks.add(parent);
-                        break;
-                    }
-                    parent = parent.parentNode;
-                }
-
-                return blocks;
-            };
-
-            const targetBlocks = getSelectedBlocks();
-            if (targetBlocks.size > 0) {
-                targetBlocks.forEach(block => {
-                    block.style.lineHeight = height;
-                });
-            } else {
-                // Fallback: if no blocks found, maybe wrap text or (if editor is empty/simple) apply to editor
-                // but usually there will be at least the editor's direct children
-                if (editor.innerHTML.trim() !== "") {
-                    // Add a block if it's just loose text? document.execCommand handles this usually
-                }
-            }
-        }
-    });
-
     // Image Handling
-    btnImage.addEventListener('click', () => {
-        imageInput.click();
-    });
+    if (btnImage) {
+        btnImage.addEventListener('click', () => {
+            imageInput.click();
+        });
+    }
 
     imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -132,65 +41,94 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsDataURL(file);
         }
-        // Clear input so same file can be selected again
         imageInput.value = '';
     });
 
-    // PDF Save Handling
-    btnPrint.addEventListener('click', async () => {
-        console.log('Начинается генерация PDF...');
-        const originalText = btnPrint.innerHTML;
-        btnPrint.innerHTML = '<span>Подготовка...</span>';
-        btnPrint.disabled = true;
+    // HTML Save/Load Handling
+    btnSave.addEventListener('click', async () => {
+        const content = editor.innerHTML;
+        const title = document.title || 'Document';
 
-        const element = document.getElementById('editor');
-        const opt = {
-            margin: [10, 10, 10, 10],
-            filename: 'document.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+        const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f5f7fa; padding: 40px 20px; display: flex; justify-content: center; }
+        .paper { background: #fff; width: 100%; max-width: 850px; min-height: 1056px; padding: 60px 80px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border-radius: 4px; color: #333; line-height: 1.5; }
+        .paper h1 { font-family: 'Outfit', sans-serif; margin-bottom: 20px; color: #222; }
+        .paper p { line-height: 1.5; margin-bottom: 15px; }
+        .paper img { max-width: 100%; height: auto; border-radius: 8px; margin: 0; }
+        .paper a { color: #4a90e2; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="paper">
+        ${content}
+    </div>
+</body>
+</html>`;
 
         try {
-            // Генерируем PDF как Blob
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-
-            // Используем File System Access API как в Notebook
             if ('showSaveFilePicker' in window) {
                 const handle = await window.showSaveFilePicker({
-                    suggestedName: 'document.pdf',
+                    suggestedName: 'document.html',
                     types: [{
-                        description: 'PDF Document',
-                        accept: { 'application/pdf': ['.pdf'] }
+                        description: 'HTML Document',
+                        accept: { 'text/html': ['.html'] }
                     }]
                 });
                 const writable = await handle.createWritable();
-                await writable.write(pdfBlob);
+                await writable.write(htmlTemplate);
                 await writable.close();
-                console.log('PDF успешно сохранен через диалог');
             } else {
-                // Фолбэк на обычное скачивание, если API не поддерживается
-                html2pdf().set(opt).from(element).save();
+                const blob = new Blob([htmlTemplate], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'document.html';
+                a.click();
+                URL.revokeObjectURL(url);
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
-                console.error('Ошибка при сохранении PDF:', err);
-                // Если диалог не сработал (например, запуск через file://), пробуем обычный save
-                html2pdf().set(opt).from(element).save();
+                console.error('Save failed:', err);
+                alert('Не удалось сохранить файл.');
             }
-        } finally {
-            btnPrint.innerHTML = originalText;
-            btnPrint.disabled = false;
         }
     });
 
-    // Auto-focus editor on start
+    btnOpen.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const html = event.target.result;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const savedContent = doc.querySelector('.paper');
+
+            if (savedContent) {
+                editor.innerHTML = savedContent.innerHTML;
+            } else {
+                editor.innerHTML = doc.body.innerHTML;
+            }
+        };
+        reader.readAsText(file);
+        fileInput.value = '';
+    });
+
     editor.focus();
 
-    // Prevent losing focus on toolbar clicks
     document.querySelector('.toolbar').addEventListener('mousedown', (e) => {
-        // Only prevent default if we're clicking a button or its child
         if (e.target.closest('button') || e.target.closest('select')) {
             e.preventDefault();
         }
@@ -317,24 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 selection.removeAllRanges();
                 const newRange = document.createRange();
 
-                // If it's a space, we want the cursor to be after the space that will be inserted
-                // But the space hasn't been inserted yet because we are in keydown.
-                // It's better to let the default action happen OR insert the space manually.
-                // Let's insert the space/enter manually and prevent default to have full control.
-
                 e.preventDefault();
                 const spacer = document.createTextNode(e.key === ' ' ? '\u00A0' : '\n');
                 link.parentNode.insertBefore(spacer, link.nextSibling);
-
-                if (e.key === 'Enter') {
-                    // For Enter in contentEditable, usually we want a new block
-                    // But for simplicity let's just insert a line break or let default happen.
-                    // Actually, simple insertNode('\n') might not work well in all browsers for blocks.
-                    // Let's just use a non-breaking space for ' ' and for Enter let's do a more complex wrap or reconsider.
-
-                    // Re-evaluating: Just handle Space for now as it's the most common autolink trigger.
-                    // If it's Enter, it's trickier.
-                }
 
                 newRange.setStartAfter(spacer);
                 newRange.collapse(true);
