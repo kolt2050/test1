@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Премиальный Редактор Документов</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="toolbar-wrapper">
+            <div class="toolbar glass">
+                <div class="tool-group">
+                    <button id="btn-bold" title="Жирный"><b>B</b></button>
+                    <button id="btn-italic" title="Курсив"><i>I</i></button>
+                    <button id="btn-underline" title="Подчеркнутый"><u>U</u></button>
+                    <button id="btn-link" title="Вставить ссылку">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="tool-group divider"></div>
+                <div class="tool-group">
+                    <button id="btn-h1" title="Заголовок 1">H1</button>
+                    <button id="btn-h2" title="Заголовок 2">H2</button>
+                    <button id="btn-h3" title="Заголовок 3">H3</button>
+                    <button id="btn-clear" title="Очистить форматирование">T</button>
+                </div>
+                <div class="tool-group divider"></div>
+                <div class="tool-group">
+                    <button id="btn-left" title="По левому краю">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="17" y1="10" x2="3" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="17" y1="18" x2="3" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button id="btn-center" title="По центру">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="10" x2="6" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="18" y1="18" x2="6" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button id="btn-right" title="По правому краю">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="21" y1="10" x2="7" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="21" y1="18" x2="7" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="tool-group divider"></div>
+                <div class="tool-group">
+                    <select id="select-line-height" title="Межстрочный интервал">
+                        <option value="1">1.0</option>
+                        <option value="1.2" selected>1.2</option>
+                        <option value="1.5">1.5</option>
+                        <option value="2.0">2.0</option>
+                        <option value="2.5">2.5</option>
+                    </select>
+                </div>
+                <div class="tool-group divider"></div>
+                <div class="tool-group">
+                    <button id="btn-image" title="Вставить картинку">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <div class="tool-group divider"></div>
+                <div class="tool-group">
+                    <button id="btn-print" class="primary-btn" title="Сохранить в PDF">
+                        <span>Сохранить PDF</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="editor-container">
+            <div id="editor" contenteditable="true" class="paper shadow">
+                <h1 style="text-align: center;">Заголовок уровня 1 (Центр)</h1>
+                <p style="line-height: 1.5;">Этот абзац демонстрирует <b>жирный текст</b>, <i>курсив</i> и
+                    <u>подчеркивание</u>. Также здесь установлен межстрочный интервал <b>1.5</b> для лучшей читаемости.
+                </p>
+
+                <h2 style="text-align: left;">Заголовок уровня 2 (Слева)</h2>
+                <p style="line-height: 1.2; text-align: right;">Этот текст выровнен по правому краю и имеет стандартный
+                    интервал 1.2. Вы можете легко изменить это, выделив данный текст и выбрав другие настройки на панели
+                    инструментов.</p>
+
+                <h3 style="text-align: center;">Пример структуры документа</h3>
+                <p>Вы можете вставлять изображения, создавать иерархию заголовков и настраивать внешний вид каждой части
+                    документа индивидуально. Попробуйте использовать кнопку <b>«Очистить форматирование»</b>, чтобы
+                    сбросить все стили выделенного фрагмента.</p>
+
+
+                <p style="text-align: center;">После завершения редактирования нажмите кнопку <b>«Сохранить PDF»</b>,
+                    чтобы загрузить готовый документ.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden file input for image upload -->
+    <input type="file" id="image-input" accept="image/*" style="display: none;">
+
+    <!-- Link Bubble (Google Docs style) -->
+    <div id="link-bubble" class="link-bubble glass shadow" style="display: none;">
+        <a href="#" id="bubble-url" target="_blank" class="bubble-link">URL</a>
+        <div class="bubble-divider"></div>
+        <div class="bubble-actions">
+            <button id="btn-copy-link" title="Копировать ссылку">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
+            <button id="btn-edit-link" title="Изменить ссылку">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+            </button>
+            <button id="btn-unlink" title="Удалить ссылку">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

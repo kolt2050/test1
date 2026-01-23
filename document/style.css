@@ -1,0 +1,271 @@
+html {
+    color-scheme: light;
+    /* Force the browser to use light-theme system elements from the very start */
+}
+
+:root {
+    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --paper-bg: #ffffff;
+    --accent-color: #4a90e2;
+    --toolbar-bg: rgba(255, 255, 255, 0.7);
+    --hover-bg: rgba(74, 144, 226, 0.1);
+    --text-color: #333;
+    color-scheme: light;
+    /* Force browser to understand it's a light theme at root level */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f5f7fa;
+    /* Solid fallback to help browser contrast */
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    color: var(--text-color);
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+/* Toolbar Styling */
+.toolbar-wrapper {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    margin-bottom: 40px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.glass {
+    background: var(--toolbar-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    gap: 10px;
+}
+
+.tool-group {
+    display: flex;
+    gap: 4px;
+}
+
+.divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+select {
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    color: #444;
+}
+
+select:hover {
+    background: var(--hover-bg);
+}
+
+button {
+    background: transparent;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+}
+
+button:hover {
+    background: var(--hover-bg);
+    color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+button.primary-btn {
+    background: var(--accent-color);
+    color: white;
+    font-weight: 500;
+    padding: 10px 20px;
+    gap: 10px;
+}
+
+button.primary-btn:hover {
+    background: #357abd;
+    color: white;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+/* Editor Styling */
+.editor-container {
+    width: 100%;
+    max-width: 850px;
+    /* A4 width roughly at 96dpi is 794px, adding padding */
+}
+
+.paper {
+    background: var(--paper-bg);
+    color: var(--text-color);
+    caret-color: var(--text-color);
+    min-height: 1056px;
+    /* A4 height roughly */
+    padding: 60px 80px;
+    border-radius: 4px;
+    outline: none;
+    cursor: text;
+    transition: box-shadow 0.3s ease;
+}
+
+.shadow {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+}
+
+.paper h1 {
+    font-family: 'Outfit', sans-serif;
+    margin-bottom: 20px;
+    color: #222;
+}
+
+.paper p {
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.paper img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.paper a {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    transition: all 0.2s ease;
+}
+
+.paper a:hover {
+    color: #357abd;
+    background: rgba(74, 144, 226, 0.05);
+}
+
+/* Link Bubble (Google Docs Style) */
+.link-bubble {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    font-size: 14px;
+    gap: 8px;
+    pointer-events: auto;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bubble-link {
+    color: var(--accent-color);
+    text-decoration: none;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.bubble-link:hover {
+    text-decoration: underline;
+}
+
+.bubble-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 4px;
+}
+
+.bubble-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.bubble-actions button {
+    padding: 6px;
+    border-radius: 4px;
+    color: #666;
+}
+
+.bubble-actions button:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--accent-color);
+}
+
+/* Print Optimization */
+@media print {
+    body {
+        background: white !important;
+    }
+
+    .toolbar-wrapper,
+    .app-container {
+        padding: 0;
+        margin: 0;
+    }
+
+    .toolbar-wrapper {
+        display: none !important;
+    }
+
+    .paper {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+    }
+
+    .app-container {
+        display: block;
+    }
+}
