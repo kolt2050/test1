@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bomberman</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-layer">
+            <div id="score-board">Score: <span id="score">0</span></div>
+            <div id="lives-board">Lives: <span id="lives">3</span></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="game-over-screen" class="hidden">
+            <h1>GAME OVER</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <button id="restart-btn">Restart</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
