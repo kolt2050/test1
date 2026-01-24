@@ -4,10 +4,11 @@ from typing import List, Set
 
 class GameSaveFinder:
     def __init__(self):
-        self.save_keywords = ['save', 'saves', 'saved games', 'savedgames', 'game data', 'saved']
-        self.save_extensions = ['.sav', '.save', '.dat', '.json', '.xml', '.bak', '.upipelinecache']
+        self.save_keywords = ['save', 'saves', 'saved games', 'savedgames', 'game data', 'saved', 'remote']
+        self.save_extensions = ['.sav', '.save', '.dat', '.json', '.xml', '.bak', '.upipelinecache', '.details']
         # Some filtering to avoid system files or too much noise
         self.excluded_dirs = {'Microsoft', 'Windows', 'Packages', 'Temp', 'Common Files', '360MenuMgr'}
+        self.appid_mapping = {}
 
     def get_available_drives(self) -> List[str]:
         """Returns a list of available drive letters (e.g. ['C:\\', 'D:\\'])."""
@@ -34,7 +35,10 @@ class GameSaveFinder:
             ])
         
         # Add secondary drive locations
-        common_game_folders = ['SteamLibrary', 'Steam', 'Games', 'XboxGames', 'GOG Games', 'Program Files (x86)/Steam']
+        common_game_folders = [
+            'SteamLibrary', 'Steam', 'Games', 'XboxGames', 'GOG Games', 
+            'Program Files (x86)/Steam', 'OfflineSTEAM', 'Vortex'
+        ]
         
         for drive in self.get_available_drives():
             drive_path = pathlib.Path(drive)
@@ -62,6 +66,10 @@ class GameSaveFinder:
         print(f"Scanning {len(search_roots)} common locations...")
 
         for root in search_roots:
+            # First pass: load steam mappings if root is a steam library
+            if root.name in ["SteamLibrary", "Steam", "OfflineSTEAM"] or (root / "steamapps").exists():
+                self._load_steam_appid_mapping(root)
+
             try:
                 # We do a shallow(ish) walk to find game folders first
                 for entry in root.iterdir():
@@ -73,9 +81,15 @@ class GameSaveFinder:
                                 self._scan_my_games(entry, found_saves)
                                 continue
                             
-                            # Logic for SteamLibrary/steamapps
-                            if entry.name == "steamapps":
-                                 self._scan_steamapps(entry, found_saves)
+                            # Logic for SteamLibrary/steamapps/OfflineSTEAM
+                            if entry.name in ["steamapps", "userdata"]:
+                                 # Within steamapps, we might have userdata if it's a root
+                                 userdata_path = entry if entry.name == "userdata" else entry.parent / "userdata"
+                                 if userdata_path.exists():
+                                     self._scan_steam_userdata(userdata_path, found_saves)
+                                 
+                                 if entry.name == "steamapps":
+                                     self._scan_steamapps(entry, found_saves)
                                  continue
 
                             # Go one or two levels deeper to find "Save" folder inside a Game folder
@@ -132,6 +146,49 @@ class GameSaveFinder:
                         })
         except Exception:
             pass
+
+    def _scan_steam_userdata(self, userdata_root: pathlib.Path, found_saves: List[dict]):
+        """Helper to scan inside 'userdata'. Can be called for 'userdata' dir or 'steamapps/..' if appropriate."""
+        # userdata structure is usually: userdata/[UserId]/[AppId]/remote
+        try:
+            for user_dir in userdata_root.iterdir():
+                if user_dir.is_dir() and user_dir.name.isdigit():
+                    for app_dir in user_dir.iterdir():
+                        if app_dir.is_dir() and app_dir.name.isdigit():
+                            remote_dir = app_dir / 'remote'
+                            if remote_dir.exists():
+                                app_id = app_dir.name
+                                game_name = self.appid_mapping.get(app_id, f"Steam App {app_id}")
+                                found_saves.append({
+                                    'game': game_name,
+                                    'path': str(remote_dir)
+                                })
+        except Exception:
+            pass
+
+    def _load_steam_appid_mapping(self, library_root: pathlib.Path):
+        """Finds appmanifest files and extracts game names."""
+        import re
+        
+        steamapps_dirs = [library_root / "steamapps"]
+        # Also check current if it is the steamapps folder
+        if library_root.name == "steamapps":
+            steamapps_dirs.append(library_root)
+            
+        for sa_dir in steamapps_dirs:
+            if not sa_dir.exists(): continue
+            try:
+                for manifest in sa_dir.glob("appmanifest_*.acf"):
+                    try:
+                        content = manifest.read_text(encoding='utf-8', errors='ignore')
+                        appid_match = re.search(r'"appid"\s+"(\d+)"', content)
+                        name_match = re.search(r'"name"\s+"([^"]+)"', content)
+                        if appid_match and name_match:
+                            self.appid_mapping[appid_match.group(1)] = name_match.group(1)
+                    except Exception:
+                        continue
+            except Exception:
+                continue
 
     def _find_save_in_game_folder(self, folder: pathlib.Path, depth: int) -> dict:
         """

@@ -9,8 +9,10 @@ def generate_html(save_data: list, output_file: str = "index.html"):
     sorted_data = sorted(save_data, key=lambda x: x['game'].lower())
     
     # Categorize data
-    steam_data = [item for item in sorted_data if "steam" in item["path"].lower() or "steam" in item["game"].lower()]
-    other_data = [item for item in sorted_data if item not in steam_data]
+    all_steam = [item for item in sorted_data if "steam" in item["path"].lower() or "steam" in item["game"].lower()]
+    steam_named_data = [item for item in all_steam if not item["game"].startswith("Steam App ")]
+    steam_unidentified_data = [item for item in all_steam if item["game"].startswith("Steam App ")]
+    other_data = [item for item in sorted_data if item not in all_steam]
     
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -42,13 +44,18 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             color: #ffffff;
         }}
         h2 {{
-            margin-top: 30px;
+            margin-top: 40px;
             color: #4caf50;
             border-left: 4px solid #4caf50;
             padding-left: 15px;
             background: rgba(76, 175, 80, 0.1);
             padding-top: 5px;
             padding-bottom: 5px;
+        }}
+        h2.unidentified {{
+            color: #ff9800;
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
         }}
         .stats {{
             background-color: #383838;
@@ -83,6 +90,9 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             width: 25%;
             border-right: 1px solid #444;
         }}
+        .game-name.unidentified {{
+            color: #ff9800;
+        }}
         .path-cell {{
             font-family: monospace;
             color: #aaa;
@@ -116,7 +126,21 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                 </tr>
             </thead>
             <tbody>
-                {_generate_table_rows(steam_data)}
+                {_generate_table_rows(steam_named_data)}
+            </tbody>
+        </table>
+
+        <h2 class="unidentified">❓ Unidentified Steam Apps</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>App ID</th>
+                    <th>Save Path</th>
+                    <th>Last Modified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {_generate_table_rows(steam_unidentified_data, is_unidentified=True)}
             </tbody>
         </table>
 
@@ -145,7 +169,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
     except Exception as e:
         print(f"Error generating HTML report: {e}")
 
-def _generate_table_rows(data: list) -> str:
+def _generate_table_rows(data: list, is_unidentified: bool = False) -> str:
     from collections import Counter
     game_counts = Counter(item["game"] for item in data)
     rows = []
@@ -164,7 +188,8 @@ def _generate_table_rows(data: list) -> str:
         row_html = "<tr>"
         if game_name not in seen_games:
             count = game_counts[game_name]
-            row_html += f'<td class="game-name" rowspan="{count}">{html.escape(game_name)}</td>'
+            td_class = "game-name unidentified" if is_unidentified else "game-name"
+            row_html += f'<td class="{td_class}" rowspan="{count}">{html.escape(game_name)}</td>'
             seen_games.add(game_name)
             
         row_html += f'<td class="path-cell">{html.escape(path)}</td>'
