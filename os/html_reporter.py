@@ -130,20 +130,6 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             </tbody>
         </table>
 
-        <h2 class="unidentified">❓ Unidentified Steam Apps</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>App ID</th>
-                    <th>Save Path</th>
-                    <th>Last Modified</th>
-                </tr>
-            </thead>
-            <tbody>
-                {_generate_table_rows(steam_unidentified_data, is_unidentified=True)}
-            </tbody>
-        </table>
-
         <h2>🕹️ Other Games</h2>
         <table>
             <thead>
@@ -155,6 +141,20 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             </thead>
             <tbody>
                 {_generate_table_rows(other_data)}
+            </tbody>
+        </table>
+
+        <h2 class="unidentified">❓ Unidentified Steam Apps</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>App ID</th>
+                    <th>Save Path</th>
+                    <th>Last Modified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {_generate_table_rows(steam_unidentified_data, is_unidentified=True)}
             </tbody>
         </table>
     </div>
