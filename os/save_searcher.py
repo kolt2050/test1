@@ -3,12 +3,36 @@ import pathlib
 from typing import List, Set
 
 class GameSaveFinder:
+    STEAM_APPID_FALLBACK = {
+        "7": "Steam Cloud / Internal",
+        "204450": "Call of Juarez: Gunslinger",
+        "228300": "Steam Controller Configs",
+        "237930": "Transistor",
+        "241100": "Steam Input Configs",
+        "391220": "Rise of the Tomb Raider",
+        "391490": "Tortuga Island (Market Items)",
+        "534380": "Dying Light 2 Stay Human",
+        "546560": "Half-Life: Alyx",
+        "801800": "Atomfall",
+        "860950": "Dead Rising Deluxe Remaster",
+        "978300": "Dragon's Dogma 2",
+        "1184050": "Gears Tactics",
+        "1338770": "Sniper Ghost Warrior Contracts 2",
+        "1649010": "Miasma Chronicles",
+        "1804270": "Warhammer 40,000: Rogue Trader",
+        "2054970": "Dragon's Dogma 2",
+        "2186680": "Warhammer 40,000: Rogue Trader",
+        "2527390": "Dead Rising Deluxe Remaster",
+        "3008130": "Dying Light: The Beast",
+        "386280": "Mortal Kombat X/XL"
+    }
+
     def __init__(self):
         self.save_keywords = ['save', 'saves', 'saved games', 'savedgames', 'game data', 'saved', 'remote']
         self.save_extensions = ['.sav', '.save', '.dat', '.json', '.xml', '.bak', '.upipelinecache', '.details']
         # Some filtering to avoid system files or too much noise
         self.excluded_dirs = {'Microsoft', 'Windows', 'Packages', 'Temp', 'Common Files', '360MenuMgr'}
-        self.appid_mapping = {}
+        self.appid_mapping = self.STEAM_APPID_FALLBACK.copy()
 
     def get_available_drives(self) -> List[str]:
         """Returns a list of available drive letters (e.g. ['C:\\', 'D:\\'])."""

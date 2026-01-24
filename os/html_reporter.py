@@ -169,6 +169,48 @@ def generate_html(save_data: list, output_file: str = "index.html"):
     except Exception as e:
         print(f"Error generating HTML report: {e}")
 
+import pathlib
+
+def _shorten_path(path_str: str) -> str:
+    """Shortens a path from the right, keeping only parts up to the game root."""
+    p = pathlib.Path(path_str)
+    parts = p.parts
+    
+    # 1. Steam userdata logic: ...\userdata\[userid]\[appid]\... -> ...\userdata\[userid]\[appid]
+    if "userdata" in parts:
+        try:
+            ud_idx = parts.index("userdata")
+            if len(parts) >= ud_idx + 3:
+                return os.path.join(*parts[:ud_idx + 3])
+        except: pass
+
+    # 2. Steam common logic: ...\common\[game_folder]\... -> ...\common\[game_folder]
+    if "common" in parts:
+        try:
+            c_idx = parts.index("common")
+            if len(parts) >= c_idx + 2:
+                return os.path.join(*parts[:c_idx + 2])
+        except: pass
+
+    # 3. AppData logic: ...\AppData\[Local/Roaming/LocalLow]\[game_folder]\... -> ...\AppData\[mode]\[game_folder]
+    if "AppData" in parts:
+        try:
+            a_idx = parts.index("AppData")
+            if len(parts) >= a_idx + 3:
+                return os.path.join(*parts[:a_idx + 3])
+        except: pass
+
+    # 4. Saved Games / My Games logic
+    for marker in ["Saved Games", "My Games"]:
+        if marker in parts:
+            try:
+                m_idx = parts.index(marker)
+                if len(parts) >= m_idx + 2:
+                    return os.path.join(*parts[:m_idx + 2])
+            except: pass
+
+    return path_str
+
 def _generate_table_rows(data: list, is_unidentified: bool = False) -> str:
     from collections import Counter
     game_counts = Counter(item["game"] for item in data)
@@ -178,6 +220,7 @@ def _generate_table_rows(data: list, is_unidentified: bool = False) -> str:
     for item in data:
         game_name = item["game"]
         path = item["path"]
+        display_path = _shorten_path(path)
         mtime_str = "Unknown"
         try:
             mtime = os.path.getmtime(path)
@@ -192,7 +235,7 @@ def _generate_table_rows(data: list, is_unidentified: bool = False) -> str:
             row_html += f'<td class="{td_class}" rowspan="{count}">{html.escape(game_name)}</td>'
             seen_games.add(game_name)
             
-        row_html += f'<td class="path-cell">{html.escape(path)}</td>'
+        row_html += f'<td class="path-cell" title="{html.escape(path)}">{html.escape(display_path)}</td>'
         row_html += f'<td class="time-cell">{mtime_str}</td>'
         row_html += "</tr>"
         rows.append(row_html)
