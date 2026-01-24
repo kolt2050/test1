@@ -8,6 +8,10 @@ def generate_html(save_data: list, output_file: str = "index.html"):
     # Sort by game name
     sorted_data = sorted(save_data, key=lambda x: x['game'].lower())
     
+    # Categorize data
+    steam_data = [item for item in sorted_data if "steam" in item["path"].lower() or "steam" in item["game"].lower()]
+    other_data = [item for item in sorted_data if item not in steam_data]
+    
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,7 +28,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             line-height: 1.6;
         }}
         .container {{
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             background-color: #2d2d2d;
             padding: 30px;
@@ -37,22 +41,33 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             padding-bottom: 10px;
             color: #ffffff;
         }}
+        h2 {{
+            margin-top: 30px;
+            color: #4caf50;
+            border-left: 4px solid #4caf50;
+            padding-left: 15px;
+            background: rgba(76, 175, 80, 0.1);
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }}
         .stats {{
             background-color: #383838;
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
-            border-left: 4px solid #4caf50;
+            border-left: 4px solid #2196f3;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
+            margin-bottom: 30px;
         }}
         th, td {{
-            padding: 6px;
+            padding: 10px;
             text-align: left;
             border-bottom: 1px solid #444;
+            vertical-align: top;
         }}
         th {{
             background-color: #333;
@@ -65,7 +80,8 @@ def generate_html(save_data: list, output_file: str = "index.html"):
         .game-name {{
             font-weight: bold;
             color: #4caf50;
-            width: 30%;
+            width: 25%;
+            border-right: 1px solid #444;
         }}
         .path-cell {{
             font-family: monospace;
@@ -77,6 +93,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             font-size: 0.85em;
             color: #888;
             white-space: nowrap;
+            width: 150px;
         }}
     </style>
 </head>
@@ -89,6 +106,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             <br><small>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</small>
         </div>
 
+        <h2>📦 Steam Games</h2>
         <table>
             <thead>
                 <tr>
@@ -98,7 +116,21 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                 </tr>
             </thead>
             <tbody>
-                {_generate_table_rows(sorted_data)}
+                {_generate_table_rows(steam_data)}
+            </tbody>
+        </table>
+
+        <h2>🕹️ Other Games</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Game</th>
+                    <th>Save Path</th>
+                    <th>Last Modified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {_generate_table_rows(other_data)}
             </tbody>
         </table>
     </div>
