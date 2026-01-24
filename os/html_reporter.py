@@ -114,8 +114,13 @@ def generate_html(save_data: list, output_file: str = "index.html"):
         print(f"Error generating HTML report: {e}")
 
 def _generate_table_rows(data: list) -> str:
+    from collections import Counter
+    game_counts = Counter(item["game"] for item in data)
     rows = []
+    seen_games = set()
+    
     for item in data:
+        game_name = item["game"]
         path = item["path"]
         mtime_str = "Unknown"
         try:
@@ -123,6 +128,16 @@ def _generate_table_rows(data: list) -> str:
             mtime_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
         except:
             pass
+        
+        row_html = "<tr>"
+        if game_name not in seen_games:
+            count = game_counts[game_name]
+            row_html += f'<td class="game-name" rowspan="{count}">{html.escape(game_name)}</td>'
+            seen_games.add(game_name)
             
-        rows.append(f'<tr><td class="game-name">{html.escape(item["game"])}</td><td class="path-cell">{html.escape(path)}</td><td class="time-cell">{mtime_str}</td></tr>')
+        row_html += f'<td class="path-cell">{html.escape(path)}</td>'
+        row_html += f'<td class="time-cell">{mtime_str}</td>'
+        row_html += "</tr>"
+        rows.append(row_html)
+        
     return ''.join(rows)
