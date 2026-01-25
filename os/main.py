@@ -20,30 +20,17 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        global SCAN_RESULTS
         if self.path == '/backup':
             try:
                 print("Received backup request...")
                 backup_mgr = BackupManager()
-                
-                # Capture stdout to silence printing locally or handle it? 
-                # For now let it print to server console, user sees it there.
-                
-                # Perform backup
-                # We need to know counting for the response
-                # BackupManager prints to stdout. Let's update BackupManager later to return stats, 
-                # but for now we'll assume it works safely.
-                
-                # Actually we can capture output or modify backup_manager.
-                # Let's keep it simple: run it and return success.
-                
-                # For better UX, we should count results.
-                # Since BackupManager prints, let's just run it.
                 backup_mgr.backup_saves(SCAN_RESULTS)
                 
                 response_data = {
                     "success": True, 
                     "location": str(backup_mgr.backup_root),
-                    "errors": 0 # We don't capturing errors exactly without refactor, assume logs show it.
+                    "errors": 0
                 }
                 
                 self.send_response(200)
@@ -52,6 +39,30 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps(response_data).encode())
                 
             except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode())
+                
+        elif self.path == '/scan':
+            try:
+                print("Received scan request...")
+                finder = GameSaveFinder()
+                SCAN_RESULTS = finder.scan()
+                
+                # Regenerate HTML
+                generate_html(SCAN_RESULTS)
+                print("Report regenerated.")
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "count": len(SCAN_RESULTS)}).encode())
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()

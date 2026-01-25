@@ -136,6 +136,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             async function triggerBackup() {{
                 const btn = document.getElementById('backupBtn');
                 const overlay = document.getElementById('loading-overlay');
+                document.getElementById('overlay-text').innerText = 'Backing up saves... Please wait';
                 
                 if (!confirm('Start backing up all found saves to V:\\\\backup-saved-games?')) return;
                 
@@ -157,15 +158,36 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                     overlay.style.display = 'none';
                 }}
             }}
+
+            async function triggerScan() {{
+                const overlay = document.getElementById('loading-overlay');
+                document.getElementById('overlay-text').innerText = 'Scanning for saves... Please wait';
+                overlay.style.display = 'flex';
+
+                try {{
+                    const response = await fetch('/scan', {{ method: 'POST' }});
+                    const result = await response.json();
+
+                    if (response.ok) {{
+                        alert(`Scan Complete! Found ${{result.count}} locations.\\nPage will now reload.`);
+                        location.reload();
+                    }} else {{
+                        alert('Scan Failed: ' + (result.error || 'Unknown error'));
+                        overlay.style.display = 'none';
+                    }}
+                }} catch (err) {{
+                    alert('Network Error: Could not contact server.');
+                    console.error(err);
+                    overlay.style.display = 'none';
+                }}
+            }}
         </script>
     </head>
     <body>
         <div id="loading-overlay">
             <div class="spinner"></div>
-            <div style="font-size: 18px; font-weight: 500; color: white;">Backing up saves... Please wait</div>
+            <div id="overlay-text" style="font-size: 18px; font-weight: 500; color: white;">Backing up saves... Please wait</div>
         </div>
-
-        <div class="container">
 
         <div class="container">
             <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 20px;">
@@ -176,6 +198,9 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                     </div>
                 </div>
                 <div class="header-controls">
+                    <button class="backup-btn" style="background: #2196F3;" onclick="triggerScan()">
+                        🔄 Rescan
+                    </button>
                     <button id="backupBtn" class="backup-btn" onclick="triggerBackup()">
                         📦 Backup All Saves
                     </button>

@@ -120,6 +120,7 @@
             async function triggerBackup() {
                 const btn = document.getElementById('backupBtn');
                 const overlay = document.getElementById('loading-overlay');
+                document.getElementById('overlay-text').innerText = 'Backing up saves... Please wait';
                 
                 if (!confirm('Start backing up all found saves to V:\\backup-saved-games?')) return;
                 
@@ -141,25 +142,49 @@
                     overlay.style.display = 'none';
                 }
             }
+
+            async function triggerScan() {
+                const overlay = document.getElementById('loading-overlay');
+                document.getElementById('overlay-text').innerText = 'Scanning for saves... Please wait';
+                overlay.style.display = 'flex';
+
+                try {
+                    const response = await fetch('/scan', { method: 'POST' });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert(`Scan Complete! Found ${result.count} locations.\nPage will now reload.`);
+                        location.reload();
+                    } else {
+                        alert('Scan Failed: ' + (result.error || 'Unknown error'));
+                        overlay.style.display = 'none';
+                    }
+                } catch (err) {
+                    alert('Network Error: Could not contact server.');
+                    console.error(err);
+                    overlay.style.display = 'none';
+                }
+            }
         </script>
     </head>
     <body>
         <div id="loading-overlay">
             <div class="spinner"></div>
-            <div style="font-size: 18px; font-weight: 500; color: white;">Backing up saves... Please wait</div>
+            <div id="overlay-text" style="font-size: 18px; font-weight: 500; color: white;">Backing up saves... Please wait</div>
         </div>
-
-        <div class="container">
 
         <div class="container">
             <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 20px;">
                 <div>
                     <h1 style="margin: 0; font-size: 24px;">🎮 Game Save Support</h1>
                     <div style="margin-top: 5px; color: #888; font-size: 14px;">
-                        Generated on: 2026-01-25 11:45:49
+                        Generated on: 2026-01-25 13:24:40
                     </div>
                 </div>
                 <div class="header-controls">
+                    <button class="backup-btn" style="background: #2196F3;" onclick="triggerScan()">
+                        🔄 Rescan
+                    </button>
                     <button id="backupBtn" class="backup-btn" onclick="triggerBackup()">
                         📦 Backup All Saves
                     </button>
