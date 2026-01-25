@@ -43,7 +43,36 @@ def create_scan():
     scan_id = c.lastrowid
     conn.commit()
     conn.close()
+    
+    # Cleanup old scans, keep only last 2 (current + previous)
+    cleanup_old_scans()
+    
     return scan_id
+
+def cleanup_old_scans():
+    """Keeps only the last 2 scans, deletes the rest."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('PRAGMA foreign_keys = ON') # Ensure cascading deletes if configured, or manual delete
+    
+    # Get IDs of scans to keep (latest 2)
+    c.execute('SELECT id FROM scans ORDER BY id DESC LIMIT 2')
+    rows = c.fetchall()
+    keep_ids = [row['id'] for row in rows]
+    
+    if keep_ids:
+        # Create placeholder string for query
+        placeholders = ','.join('?' for _ in keep_ids)
+        
+        # Delete from file_entries first (if no cascade)
+        c.execute(f'DELETE FROM file_entries WHERE scan_id NOT IN ({placeholders})', keep_ids)
+        
+        # Delete from scans
+        c.execute(f'DELETE FROM scans WHERE id NOT IN ({placeholders})', keep_ids)
+        
+        conn.commit()
+        
+    conn.close()
 
 def add_file_entries(scan_id, file_list):
     """

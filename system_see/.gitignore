@@ -1,1 +1,3 @@
 system_see.db
+*.log
+*.tmp

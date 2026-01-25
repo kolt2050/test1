@@ -41,11 +41,13 @@ def scan_drive(scan_id, root_path='C:\\'):
         dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
         
         for name in files:
-            if is_ignored(name, ignore_patterns):
-                continue
-                
             try:
                 path = os.path.join(root, name)
+                
+                # Check full path against ignore patterns
+                if is_ignored(path, ignore_patterns):
+                    continue
+
                 stats = os.stat(path)
                 
                 # (path, size, mtime)

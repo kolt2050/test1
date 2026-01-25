@@ -424,6 +424,89 @@
         .stat-item strong {
             color: var(--accent);
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-weight: 500;
+        }
+
+        .modal-btn:hover {
+            opacity: 0.9;
+        }
+
+        .modal-btn.confirm {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
     </style>
 </head>
 
@@ -480,6 +563,18 @@
                 <ul class="file-list" id="delList">
                     <!-- Items inserted here -->
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modalTitle">Confirm Action</h3>
+            <p id="modalMessage">Are you sure?</p>
+            <div class="modal-buttons">
+                <button id="modalConfirmBtn" class="modal-btn confirm">OK</button>
+                <button id="modalCancelBtn" class="modal-btn cancel" onclick="closeModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -613,29 +708,51 @@
         }
 
 
-        async function restartServer() {
-            if (!confirm('Are you sure you want to restart the server?')) return;
+        let modalCallback = null;
 
-            try {
-                await fetch('/restart', { method: 'POST' });
-                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Restarting...</h1><p>The page will reload in a few seconds.</p></div>';
-                setTimeout(() => {
-                    location.reload();
-                }, 3000);
-            } catch (e) {
-                alert('Error restarting server');
-            }
+        function showModal(title, message, onConfirm) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('customModal').classList.add('active');
+
+            // Unbind previous listener to avoid multiple calls
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const newBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+            newBtn.addEventListener('click', () => {
+                closeModal();
+                if (onConfirm) onConfirm();
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.remove('active');
+        }
+
+        async function restartServer() {
+            showModal('Restart Server', 'Are you sure you want to restart the server? The page will reload.', async () => {
+                try {
+                    await fetch('/restart', { method: 'POST' });
+                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Restarting...</h1><p>The page will reload in a few seconds.</p></div>';
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                } catch (e) {
+                    alert('Error restarting server');
+                }
+            });
         }
 
         async function stopServer() {
-            if (!confirm('Are you sure you want to stop the server?')) return;
-
-            try {
-                await fetch('/shutdown', { method: 'POST' });
-                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Stopped</h1><p>You can close this tab.</p></div>';
-            } catch (e) {
-                alert('Error stopping server');
-            }
+            showModal('Stop Server', 'Are you sure you want to stop the server?', async () => {
+                try {
+                    await fetch('/shutdown', { method: 'POST' });
+                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Stopped</h1><p>You can close this tab.</p></div>';
+                } catch (e) {
+                    alert('Error stopping server');
+                }
+            });
         }
 
         async function openLocation(path) {
@@ -661,27 +778,29 @@
         }
 
         async function clearDB() {
-            if (!confirm('Are you sure you want to clear the database? All history will be lost.')) return;
-            try {
-                const response = await fetch('/clear_db', { method: 'POST' });
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    alert('Database cleared.');
-                    updateDBSize();
-                    updateHistory();
-                    // Clear UI results
-                    document.getElementById('newList').innerHTML = '';
-                    document.getElementById('modList').innerHTML = '';
-                    document.getElementById('delList').innerHTML = '';
-                    document.getElementById('newCount').innerText = '0';
-                    document.getElementById('modCount').innerText = '0';
-                    document.getElementById('delCount').innerText = '0';
-                    document.getElementById('resultsArea').classList.remove('visible');
-                    document.getElementById('statsBar').style.display = 'none';
+            showModal('Clear Database', 'Are you sure you want to clear the database? All history will be lost.', async () => {
+                try {
+                    const response = await fetch('/clear_db', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.status === 'ok') {
+                        // Using simple alert here for success message is fine, or could use another modal
+                        // alert('Database cleared.');
+                        updateDBSize();
+                        updateHistory();
+                        // Clear UI results
+                        document.getElementById('newList').innerHTML = '';
+                        document.getElementById('modList').innerHTML = '';
+                        document.getElementById('delList').innerHTML = '';
+                        document.getElementById('newCount').innerText = '0';
+                        document.getElementById('modCount').innerText = '0';
+                        document.getElementById('delCount').innerText = '0';
+                        document.getElementById('resultsArea').classList.remove('visible');
+                        document.getElementById('statsBar').style.display = 'none';
+                    }
+                } catch (e) {
+                    alert('Error clearing database');
                 }
-            } catch (e) {
-                alert('Error clearing database');
-            }
+            });
         }
 
         async function updateHistory() {
