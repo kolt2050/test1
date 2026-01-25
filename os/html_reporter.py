@@ -105,16 +105,86 @@ def generate_html(save_data: list, output_file: str = "index.html"):
             white-space: nowrap;
             width: 150px;
         }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🎮 Game Save Support</h1>
         
-        <div class="stats">
-            <strong>Scan Complete:</strong> Found {len(sorted_data)} potential save locations.
-            <br><small>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</small>
+            /* Loading overlay */
+            #loading-overlay {{
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.7); z-index: 1000;
+                display: none; justify-content: center; align-items: center; flex-direction: column;
+            }}
+            .spinner {{
+                border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+                border-top: 4px solid #4CAF50; width: 40px; height: 40px;
+                animation: spin 1s linear infinite; margin-bottom: 15px;
+            }}
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            
+            /* Backup Button */
+            .backup-btn {{
+                background: linear-gradient(135deg, #4CAF50, #45a049);
+                color: white; border: none; padding: 10px 20px;
+                font-size: 14px; font-weight: 600; border-radius: 6px;
+                cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+                text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+            }}
+            .backup-btn:hover {{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4); }}
+            .backup-btn:active {{ transform: translateY(0); }}
+            
+            .header-controls {{ display: flex; align-items: center; gap: 15px; margin-top: 10px; }}
+        </style>
+        <script>
+            async function triggerBackup() {{
+                const btn = document.getElementById('backupBtn');
+                const overlay = document.getElementById('loading-overlay');
+                
+                if (!confirm('Start backing up all found saves to V:\\\\backup-saved-games?')) return;
+                
+                overlay.style.display = 'flex';
+                
+                try {{
+                    const response = await fetch('/backup', {{ method: 'POST' }});
+                    const result = await response.json();
+                    
+                    if (response.ok) {{
+                        alert(`Backup Complete!\\n\\nSuccess: ${{result.success}}\\nErrors: ${{result.errors}}\\nLocation: ${{result.location}}`);
+                    }} else {{
+                        alert('Backup Failed: ' + (result.error || 'Unknown error'));
+                    }}
+                }} catch (err) {{
+                    alert('Network Error: Could not contact server. Is the script running?');
+                    console.error(err);
+                }} finally {{
+                    overlay.style.display = 'none';
+                }}
+            }}
+        </script>
+    </head>
+    <body>
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <div style="font-size: 18px; font-weight: 500; color: white;">Backing up saves... Please wait</div>
         </div>
+
+        <div class="container">
+
+        <div class="container">
+            <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 20px;">
+                <div>
+                    <h1 style="margin: 0; font-size: 24px;">🎮 Game Save Support</h1>
+                    <div style="margin-top: 5px; color: #888; font-size: 14px;">
+                        Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <button id="backupBtn" class="backup-btn" onclick="triggerBackup()">
+                        📦 Backup All Saves
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stats" style="margin-bottom: 30px;">
+                Found <strong style="color: #4caf50;">{len(sorted_data)}</strong> game save locations.
+            </div>
 
         <h2>📦 Steam Games</h2>
         <table>
