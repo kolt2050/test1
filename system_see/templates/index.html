@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System See - File Monitor</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            padding-bottom: 3rem;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .scan-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .scan-btn:active {
+            transform: translateY(1px);
+        }
+
+        .scan-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            background: var(--text-secondary);
+            box-shadow: none;
+        }
+
+        .stop-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+        }
+
+        .stop-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .db-controls {
+            position: absolute;
+            top: 2rem;
+            right: 17rem;
+            /* Moved further left to accommodate stop button */
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .history-select {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem;
+            border-radius: 8px;
+            width: 250px;
+        }
+
+        .history-select option {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+        }
+
+        .db-size {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .clear-db-btn {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-db-btn:hover {
+            background: var(--warning);
+            color: black;
+        }
+
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .results.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .count-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+            list-style: none;
+            padding: 0;
+        }
+
+        .file-list li {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+            display: grid;
+            grid-template-columns: 200px 400px 1fr;
+            /* Program | Name | Path */
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .program-badge {
+            color: var(--warning);
+            font-size: 0.85rem;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-name {
+            color: var(--text-primary);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .path-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            text-align: center;
+            width: 40px;
+            overflow: hidden;
+            font-family: inherit;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            justify-self: end;
+        }
+
+        .path-btn:hover {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .file-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        /* Status Colors */
+        .new-files h2 {
+            color: var(--success);
+        }
+
+        .mod-files h2 {
+            color: var(--warning);
+        }
+
+        .del-files h2 {
+            color: var(--danger);
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+
+            0%,
+            20% {
+                content: '.';
+            }
+
+            40% {
+                content: '..';
+            }
+
+            60% {
+                content: '...';
+            }
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-item strong {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>SYSTEM SEE</h1>
+        <div style="margin-top: 10px;">
+            <select id="historyDropdown" class="history-select">
+                <option value="">Scan History...</option>
+            </select>
+        </div>
+        <div class="db-controls">
+            <span id="dbSize" class="db-size">DB Size: -</span>
+            <button class="clear-db-btn" onclick="clearDB()">Clear DB</button>
+        </div>
+        <button class="stop-btn" onclick="stopServer()">Stop Server</button>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <button id="scanBtn" class="scan-btn" onclick="startScan()">Scan Drive C:</button>
+            <div id="loadingText" class="loading">Scanning in progress (this may take a while)</div>
+        </div>
+
+        <div id="statsBar" class="stats-bar" style="display:none;">
+            <div class="stat-item">Time: <strong id="scanDuration">-</strong>s</div>
+            <div class="stat-item">Total Files: <strong id="totalFiles">-</strong></div>
+        </div>
+
+        <div id="resultsArea" class="results">
+            <!-- New Files -->
+            <div class="card new-files">
+                <h2>New Files <span class="count-badge" id="newCount">0</span></h2>
+                <ul class="file-list" id="newList">
+                    <!-- Items inserted here -->
+                </ul>
+            </div>
+
+            <!-- Modified Files -->
+            <div class="card mod-files">
+                <h2>Modified Files <span class="count-badge" id="modCount">0</span></h2>
+                <ul class="file-list" id="modList">
+                    <!-- Items inserted here -->
+                </ul>
+            </div>
+
+            <!-- Deleted Files -->
+            <div class="card del-files">
+                <h2>Deleted Files <span class="count-badge" id="delCount">0</span></h2>
+                <ul class="file-list" id="delList">
+                    <!-- Items inserted here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function startScan() {
+            const btn = document.getElementById('scanBtn');
+            const loading = document.getElementById('loadingText');
+            const results = document.getElementById('resultsArea');
+
+            btn.disabled = true;
+            btn.textContent = 'Scanning...';
+            loading.style.display = 'block';
+            results.classList.remove('visible');
+
+            try {
+                const response = await fetch('/scan', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                // Update UI
+                updateList('newList', 'newCount', data.added);
+                updateList('modList', 'modCount', data.modified);
+                updateList('delList', 'delCount', data.deleted);
+
+                // Update Stats
+                document.getElementById('statsBar').style.display = 'flex';
+                document.getElementById('scanDuration').textContent = data.stats.duration;
+                document.getElementById('totalFiles').textContent = data.stats.total_files.toLocaleString();
+
+                if (data.note) {
+                    // If it's a baseline scan
+                    const list = document.getElementById('newList');
+                    list.innerHTML = `<li style="text-align:center; font-style:italic;">${data.note}</li>`;
+                }
+
+                results.classList.add('visible');
+                updateDBSize();
+                updateHistory(); // Refresh history list after new scan
+
+            } catch (err) {
+                console.error(err);
+                alert('Scan failed. See console.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Scan Drive C:';
+                loading.style.display = 'none';
+            }
+        }
+
+        function updateList(listId, countId, items) {
+            const list = document.getElementById(listId);
+            const count = document.getElementById(countId);
+
+            list.innerHTML = '';
+            if (!items) items = [];
+
+            count.textContent = items.length > 1000 ? '1000+' : items.length;
+
+            // Limit display to prevent freezing browser if thousands of changes
+            const displayItems = items.slice(0, 500);
+
+            if (displayItems.length === 0) {
+                list.innerHTML = '<li>No changes detected</li>';
+            } else {
+                displayItems.forEach(item => {
+                    const li = document.createElement('li');
+
+
+                    // item is now an object: {name, path, program}
+                    // Order: Program | Name | Path Button
+                    li.innerHTML = `
+                        <span class="program-badge" title="${item.program}">${item.program}</span>
+                        <span class="file-name" title="${item.name}">${item.name}</span>
+                        <button class="path-btn" onclick="openLocation('${item.path.replace(/\\/g, '\\\\')}')" title="${item.path}">
+                            &#10140;
+                        </button>
+                    `;
+                    list.appendChild(li);
+                });
+
+                if (items.length > 500) {
+                    const li = document.createElement('li');
+                    li.textContent = `...and ${items.length - 500} more items.`;
+                    li.style.color = 'var(--accent)';
+                    list.appendChild(li);
+                }
+            }
+        }
+
+        async function stopServer() {
+            if (!confirm('Are you sure you want to stop the server?')) return;
+
+            try {
+                await fetch('/shutdown', { method: 'POST' });
+                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Stopped</h1><p>You can close this tab.</p></div>';
+            } catch (e) {
+                alert('Error stopping server');
+            }
+        }
+
+        async function openLocation(path) {
+            try {
+                await fetch('/open_folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path })
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function updateDBSize() {
+            try {
+                const response = await fetch('/db_size');
+                const data = await response.json();
+                document.getElementById('dbSize').textContent = `DB Size: ${data.size}`;
+            } catch (e) {
+                console.error('Failed to get DB size');
+            }
+        }
+
+        async function clearDB() {
+            if (!confirm('Are you sure you want to clear the database? All history will be lost.')) return;
+            try {
+                const response = await fetch('/clear_db', { method: 'POST' });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    alert('Database cleared.');
+                    updateDBSize();
+                    updateHistory();
+                    // Clear UI results
+                    document.getElementById('newList').innerHTML = '';
+                    document.getElementById('modList').innerHTML = '';
+                    document.getElementById('delList').innerHTML = '';
+                    document.getElementById('newCount').innerText = '0';
+                    document.getElementById('modCount').innerText = '0';
+                    document.getElementById('delCount').innerText = '0';
+                    document.getElementById('resultsArea').classList.remove('visible');
+                    document.getElementById('statsBar').style.display = 'none';
+                }
+            } catch (e) {
+                alert('Error clearing database');
+            }
+        }
+
+        async function updateHistory() {
+            try {
+                const response = await fetch('/scan_history');
+                const scans = await response.json();
+                const select = document.getElementById('historyDropdown');
+                select.innerHTML = '<option value="">Scan History (Total: ' + scans.length + ')</option>';
+
+                scans.forEach(scan => {
+                    const opt = document.createElement('option');
+                    opt.value = scan.id;
+                    opt.textContent = `${scan.date} (ID: ${scan.id})`;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("Failed to load history");
+            }
+        }
+
+        // Init DB size on load
+        updateDBSize();
+        updateHistory();
+    </script>
+
+</body>
+
+</html>
