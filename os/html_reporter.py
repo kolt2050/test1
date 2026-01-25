@@ -220,6 +220,23 @@ def generate_html(save_data: list, scanned_paths: list = None, output_file: str 
                     overlay.style.display = 'none';
                 }}
             }}
+            async function triggerStop() {{
+                if (!confirm('Are you sure you want to stop the server?')) return;
+                
+                try {{
+                    const response = await fetch('/stop', {{ method: 'POST' }});
+                    if (response.ok) {{
+                        alert('Server stopping...');
+                        window.close(); // Try to close tab
+                        document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%'>Server Stopped</h1>";
+                    }} else {{
+                        alert('Failed to stop server.');
+                    }}
+                }} catch (err) {{
+                    alert('Server stopped (or network error).');
+                    window.close();
+                }}
+            }}
         </script>
     </head>
     <body>
@@ -231,12 +248,15 @@ def generate_html(save_data: list, scanned_paths: list = None, output_file: str 
         <div class="container">
             <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 20px;">
                 <div>
-                    <h1 style="margin: 0; font-size: 24px;">🎮 Game Save Support</h1>
+                    <h1 style="margin: 0; font-size: 24px;">🎮 Game Save Support <span style="font-size: 12px; color: #666; vertical-align: middle;">v2.0</span></h1>
                     <div style="margin-top: 5px; color: #888; font-size: 14px;">
                         Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     </div>
                 </div>
                 <div class="header-controls">
+                    <button class="backup-btn" style="background: #f44336;" onclick="triggerStop()">
+                        🛑 Stop Server
+                    </button>
                     <button class="backup-btn" style="background: #2196F3;" onclick="triggerScan()">
                         🔄 Rescan
                     </button>

@@ -91,10 +91,53 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode())
+        elif self.path == '/stop':
+            print("Received stop request...")
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True}).encode())
+            
+            def kill_me():
+                time.sleep(1)
+                print("Server shutting down by user request.")
+                
+                # Cleanup logs and temp files
+                import glob
+                import shutil
+                
+                patterns = [
+                    "server_log_*.txt",
+                    "debug_*.py",
+                    "index.html",
+                    "output.txt",
+                    "output_new.txt"
+                ]
+                
+                for pattern in patterns:
+                    for f in glob.glob(pattern):
+                        try:
+                            os.remove(f)
+                            print(f"Deleted: {f}")
+                        except Exception as e:
+                            print(f"Error deleting {f}: {e}")
+                            
+                # Cleanup cache dir
+                if os.path.exists("__pycache__"):
+                    try:
+                        shutil.rmtree("__pycache__")
+                        print("Deleted __pycache__")
+                    except Exception as e:
+                        print(f"Error deleting __pycache__: {e}")
+
+                os._exit(0)
+                
+            Thread(target=kill_me).start()
+            
         else:
             self.send_error(404)
 
-def run_server(port=8000):
+def run_server(port=8001):
     server_address = ('', port)
     httpd = HTTPServer(server_address, SaveScannerHandler)
     print(f"Server started at http://localhost:{port}")
