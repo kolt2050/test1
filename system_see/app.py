@@ -8,6 +8,8 @@ import scanner
 import monitor
 import threading
 
+import ctypes
+
 app = Flask(__name__)
 
 # Initialize DB
@@ -45,8 +47,8 @@ def open_folder():
         norm_path = os.path.normpath(path)
         
         # Open explorer with file selected
-        # Using PowerShell Start-Process is often better at handling window focus
-        subprocess.Popen(['powershell', '-Command', f'Start-Process explorer -ArgumentList "/select,`"{norm_path}`""'])
+        # Using 'start' command via shell is the most consistent way to launch separate window
+        os.system(f'start "" "explorer" /select,"{norm_path}"')
         return jsonify({'status': 'ok'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
