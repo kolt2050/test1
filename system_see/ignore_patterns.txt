@@ -1,2 +1,4 @@
 # Add patterns to ignore here (glob format)
 *.log
+*.tmp
+*.ldb

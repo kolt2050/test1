@@ -106,6 +106,19 @@ def cleanup():
                 except Exception as e:
                     print(f"Error deleting {path}: {e}")
 
+@app.route('/restart', methods=['POST'])
+def restart():
+    cleanup()
+    print("Restarting server...")
+    # Give a moment for the response to be sent
+    def restart_server():
+        time.sleep(1)
+        import sys
+        os.execl(sys.executable, sys.executable, *sys.argv)
+    
+    threading.Thread(target=restart_server).start()
+    return jsonify({'message': 'Server is restarting...'})
+
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
     cleanup() # cleanup immediately before killing server

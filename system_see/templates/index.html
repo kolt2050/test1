@@ -97,21 +97,58 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .header-buttons {
             position: absolute;
             top: 2rem;
             right: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .stop-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            /* Position reset because now inside flex container */
+            position: static;
         }
 
         .stop-btn:hover {
             background: var(--danger);
             color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        .restart-btn {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .restart-btn:hover {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
         }
 
         .db-controls {
             position: absolute;
             top: 2rem;
-            right: 17rem;
-            /* Moved further left to accommodate stop button */
+            right: 25rem;
+            /* Moved further left to accommodate buttons */
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -202,31 +239,6 @@
             padding: 0;
         }
 
-        .file-list li {
-            padding: 0.8rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-family: monospace;
-            display: grid;
-            grid-template-columns: 200px 400px 1fr;
-            /* Program | Name | Path */
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .program-badge {
-            color: var(--warning);
-            font-size: 0.85rem;
-            background: rgba(245, 158, 11, 0.1);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            text-align: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
         .file-name {
             color: var(--text-primary);
             font-weight: 500;
@@ -261,7 +273,88 @@
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
         }
 
-        .file-list li:last-child {
+        /* Grouping Styles */
+        .program-group {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .program-header {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .program-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .program-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .program-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.1rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-icon {
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .program-group.open .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .group-files {
+            display: none;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .program-group.open .group-files {
+            display: block;
+        }
+
+        .group-files li {
+            padding: 0.6rem 1rem 0.6rem 3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .group-files li::before {
+            content: '';
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+
+        .group-files li:last-child {
             border-bottom: none;
         }
 
@@ -347,7 +440,10 @@
             <span id="dbSize" class="db-size">DB Size: -</span>
             <button class="clear-db-btn" onclick="clearDB()">Clear DB</button>
         </div>
-        <button class="stop-btn" onclick="stopServer()">Stop Server</button>
+        <div class="header-buttons">
+            <button class="restart-btn" onclick="restartServer()">Restart Server</button>
+            <button class="stop-btn" onclick="stopServer()">Stop Server</button>
+        </div>
     </header>
 
     <div class="container">
@@ -445,36 +541,89 @@
             list.innerHTML = '';
             if (!items) items = [];
 
+            // Update total count
             count.textContent = items.length > 1000 ? '1000+' : items.length;
 
-            // Limit display to prevent freezing browser if thousands of changes
-            const displayItems = items.slice(0, 500);
+            if (items.length === 0) {
+                list.innerHTML = '<div style="padding:1rem">No changes detected</div>';
+                return;
+            }
 
-            if (displayItems.length === 0) {
-                list.innerHTML = '<li>No changes detected</li>';
-            } else {
-                displayItems.forEach(item => {
+            // Group by Program
+            const groups = {};
+            items.forEach(item => {
+                const prog = item.program || 'Unknown';
+                if (!groups[prog]) groups[prog] = [];
+                groups[prog].push(item);
+            });
+
+            // Sort programs by name
+            const sortedPrograms = Object.keys(groups).sort();
+
+            // Create UI for groups
+            sortedPrograms.forEach(prog => {
+                const groupItems = groups[prog];
+
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'program-group';
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'program-header';
+                header.innerHTML = `
+                    <div class="program-title">
+                        <span>${prog}</span>
+                        <span class="program-count">${groupItems.length}</span>
+                    </div>
+                    <span class="toggle-icon">&#9662;</span>
+                `;
+
+                // Click to toggle
+                header.onclick = () => {
+                    groupDiv.classList.toggle('open');
+                };
+
+                // Files List
+                const ul = document.createElement('ul');
+                ul.className = 'group-files';
+
+                // Limit items per group to avoid huge DOM if a folder has 10k changes
+                const maxItems = 100;
+                groupItems.slice(0, maxItems).forEach(item => {
                     const li = document.createElement('li');
-
-
-                    // item is now an object: {name, path, program}
-                    // Order: Program | Name | Path Button
                     li.innerHTML = `
-                        <span class="program-badge" title="${item.program}">${item.program}</span>
                         <span class="file-name" title="${item.name}">${item.name}</span>
                         <button class="path-btn" onclick="openLocation('${item.path.replace(/\\/g, '\\\\')}')" title="${item.path}">
                             &#10140;
                         </button>
                     `;
-                    list.appendChild(li);
+                    ul.appendChild(li);
                 });
 
-                if (items.length > 500) {
-                    const li = document.createElement('li');
-                    li.textContent = `...and ${items.length - 500} more items.`;
-                    li.style.color = 'var(--accent)';
-                    list.appendChild(li);
+                if (groupItems.length > maxItems) {
+                    const moreLi = document.createElement('li');
+                    moreLi.innerHTML = `<em style="color:var(--text-secondary)">...and ${groupItems.length - maxItems} more files</em>`;
+                    ul.appendChild(moreLi);
                 }
+
+                groupDiv.appendChild(header);
+                groupDiv.appendChild(ul);
+                list.appendChild(groupDiv);
+            });
+        }
+
+
+        async function restartServer() {
+            if (!confirm('Are you sure you want to restart the server?')) return;
+
+            try {
+                await fetch('/restart', { method: 'POST' });
+                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Restarting...</h1><p>The page will reload in a few seconds.</p></div>';
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+            } catch (e) {
+                alert('Error restarting server');
             }
         }
 
