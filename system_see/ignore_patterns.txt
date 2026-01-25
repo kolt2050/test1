@@ -1,5 +1,5 @@
 # Add patterns to ignore here (glob format)
-*.log*
+# *.log*
 *.tmp
 *.ldb
 *.json

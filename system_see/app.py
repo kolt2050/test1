@@ -45,8 +45,8 @@ def open_folder():
         norm_path = os.path.normpath(path)
         
         # Open explorer with file selected
-        # subprocess.Popen with list helps in some cases to bring window to front better than shell=True
-        subprocess.Popen(['explorer', f'/select,{norm_path}'])
+        # Using PowerShell Start-Process is often better at handling window focus
+        subprocess.Popen(['powershell', '-Command', f'Start-Process explorer -ArgumentList "/select,`"{norm_path}`""'])
         return jsonify({'status': 'ok'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
