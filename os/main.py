@@ -24,12 +24,35 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
         if self.path == '/backup':
             try:
                 print("Received backup request...")
-                backup_mgr = BackupManager()
+                
+                # Open folder selection dialog
+                import tkinter as tk
+                from tkinter import filedialog
+                
+                # Create hidden root window
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes('-topmost', True) # Bring to front
+                
+                print("Waiting for user to select folder...")
+                selected_folder = filedialog.askdirectory(title="Select Backup Destination")
+                root.destroy()
+                
+                if not selected_folder:
+                    print("Backup cancelled by user.")
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"success": False, "error": "Backup cancelled by user"}).encode())
+                    return
+
+                print(f"User selected: {selected_folder}")
+                backup_mgr = BackupManager(backup_root=selected_folder)
                 backup_mgr.backup_saves(SCAN_RESULTS)
                 
                 response_data = {
                     "success": True, 
-                    "location": str(backup_mgr.backup_root),
+                    "location": str(selected_folder),
                     "errors": 0
                 }
                 

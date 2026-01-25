@@ -138,7 +138,7 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                 const overlay = document.getElementById('loading-overlay');
                 document.getElementById('overlay-text').innerText = 'Backing up saves... Please wait';
                 
-                if (!confirm('Start backing up all found saves to V:\\\\backup-saved-games?')) return;
+                if (!confirm('Select a destination folder in the opened window to start backup?')) return;
                 
                 overlay.style.display = 'flex';
                 
