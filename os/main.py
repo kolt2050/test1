@@ -111,7 +111,11 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
                     "debug_*.py",
                     "index.html",
                     "output.txt",
-                    "output_new.txt"
+                    "output_new.txt",
+                    "ids.txt",
+                    "backup_test_*.py",
+                    "list_found_games.py",
+                    "backup_test_output.txt"
                 ]
                 
                 for pattern in patterns:
