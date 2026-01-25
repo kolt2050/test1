@@ -87,7 +87,9 @@ class GameSaveFinder:
         found_saves = []
         search_roots = self.get_search_paths()
 
-        print(f"Scanning {len(search_roots)} common locations...")
+        print(f"Scanning {len(search_roots)} common locations:")
+        for root in search_roots:
+            print(f" - {root}")
 
         for root in search_roots:
             # First pass: load steam mappings if root is a steam library
