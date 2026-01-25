@@ -144,6 +144,24 @@
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
         }
 
+        .lang-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--text-secondary);
+            padding: 0.5rem 0.8rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .db-controls {
             position: absolute;
             top: 2rem;
@@ -513,37 +531,40 @@
 <body>
 
     <header>
-        <h1>SYSTEM SEE</h1>
+        <h1 data-i18n="app_title">SYSTEM SEE</h1>
         <div style="margin-top: 10px;">
             <select id="historyDropdown" class="history-select">
-                <option value="">Scan History...</option>
+                <option value="" data-i18n="scan_history_placeholder">Scan History...</option>
             </select>
         </div>
         <div class="db-controls">
-            <span id="dbSize" class="db-size">DB Size: -</span>
-            <button class="clear-db-btn" onclick="clearDB()">Clear DB</button>
+            <span class="db-size"><span data-i18n="db_size_label">DB Size:</span> <span id="dbSizeVal">-</span></span>
+            <button class="clear-db-btn" onclick="clearDB()" data-i18n="clear_db_btn">Clear DB</button>
         </div>
         <div class="header-buttons">
-            <button class="restart-btn" onclick="restartServer()">Restart Server</button>
-            <button class="stop-btn" onclick="stopServer()">Stop Server</button>
+            <button class="lang-btn" onclick="toggleLanguage()">RU</button>
+            <button class="restart-btn" onclick="restartServer()" data-i18n="restart_btn">Restart Server</button>
+            <button class="stop-btn" onclick="stopServer()" data-i18n="stop_btn">Stop Server</button>
         </div>
     </header>
 
     <div class="container">
         <div class="controls">
-            <button id="scanBtn" class="scan-btn" onclick="startScan()">Scan Drive C:</button>
-            <div id="loadingText" class="loading">Scanning in progress (this may take a while)</div>
+            <button id="scanBtn" class="scan-btn" onclick="startScan()" data-i18n="scan_btn">Scan Drive C:</button>
+            <div id="loadingText" class="loading" data-i18n="loading_text">Scanning in progress (this may take a while)
+            </div>
         </div>
 
         <div id="statsBar" class="stats-bar" style="display:none;">
-            <div class="stat-item">Time: <strong id="scanDuration">-</strong>s</div>
-            <div class="stat-item">Total Files: <strong id="totalFiles">-</strong></div>
+            <div class="stat-item"><span data-i18n="time_label">Time:</span> <strong id="scanDuration">-</strong>s</div>
+            <div class="stat-item"><span data-i18n="files_label">Total Files:</span> <strong id="totalFiles">-</strong>
+            </div>
         </div>
 
         <div id="resultsArea" class="results">
             <!-- New Files -->
             <div class="card new-files">
-                <h2>New Files <span class="count-badge" id="newCount">0</span></h2>
+                <h2><span data-i18n="new_files">New Files</span> <span class="count-badge" id="newCount">0</span></h2>
                 <ul class="file-list" id="newList">
                     <!-- Items inserted here -->
                 </ul>
@@ -551,7 +572,8 @@
 
             <!-- Modified Files -->
             <div class="card mod-files">
-                <h2>Modified Files <span class="count-badge" id="modCount">0</span></h2>
+                <h2><span data-i18n="mod_files">Modified Files</span> <span class="count-badge" id="modCount">0</span>
+                </h2>
                 <ul class="file-list" id="modList">
                     <!-- Items inserted here -->
                 </ul>
@@ -559,7 +581,8 @@
 
             <!-- Deleted Files -->
             <div class="card del-files">
-                <h2>Deleted Files <span class="count-badge" id="delCount">0</span></h2>
+                <h2><span data-i18n="del_files">Deleted Files</span> <span class="count-badge" id="delCount">0</span>
+                </h2>
                 <ul class="file-list" id="delList">
                     <!-- Items inserted here -->
                 </ul>
@@ -573,8 +596,9 @@
             <h3 id="modalTitle">Confirm Action</h3>
             <p id="modalMessage">Are you sure?</p>
             <div class="modal-buttons">
-                <button id="modalConfirmBtn" class="modal-btn confirm">OK</button>
-                <button id="modalCancelBtn" class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+                <button id="modalConfirmBtn" class="modal-btn confirm" data-i18n="modal_ok">OK</button>
+                <button id="modalCancelBtn" class="modal-btn cancel" onclick="closeModal()"
+                    data-i18n="modal_cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -586,7 +610,7 @@
             const results = document.getElementById('resultsArea');
 
             btn.disabled = true;
-            btn.textContent = 'Scanning...';
+            btn.textContent = txt('scan_btn_loading');
             loading.style.display = 'block';
             results.classList.remove('visible');
 
@@ -624,7 +648,7 @@
                 alert('Scan failed. See console.');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Scan Drive C:';
+                btn.textContent = txt('scan_btn');
                 loading.style.display = 'none';
             }
         }
@@ -640,14 +664,14 @@
             count.textContent = items.length > 1000 ? '1000+' : items.length;
 
             if (items.length === 0) {
-                list.innerHTML = '<div style="padding:1rem">No changes detected</div>';
+                list.innerHTML = `<div style="padding:1rem">${txt('no_changes')}</div>`;
                 return;
             }
 
             // Group by Program
             const groups = {};
             items.forEach(item => {
-                const prog = item.program || 'Unknown';
+                const prog = item.program || txt('unknown');
                 if (!groups[prog]) groups[prog] = [];
                 groups[prog].push(item);
             });
@@ -697,7 +721,8 @@
 
                 if (groupItems.length > maxItems) {
                     const moreLi = document.createElement('li');
-                    moreLi.innerHTML = `<em style="color:var(--text-secondary)">...and ${groupItems.length - maxItems} more files</em>`;
+                    const diff = groupItems.length - maxItems;
+                    moreLi.innerHTML = `<em style="color:var(--text-secondary)">${txt('more_files').replace('{n}', diff)}</em>`;
                     ul.appendChild(moreLi);
                 }
 
@@ -731,10 +756,10 @@
         }
 
         async function restartServer() {
-            showModal('Restart Server', 'Are you sure you want to restart the server? The page will reload.', async () => {
+            showModal(txt('restart_title'), txt('restart_msg'), async () => {
                 try {
                     await fetch('/restart', { method: 'POST' });
-                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Restarting...</h1><p>The page will reload in a few seconds.</p></div>';
+                    document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>${txt('restart_done_title')}</h1><p>${txt('restart_done_msg')}</p></div>`;
                     setTimeout(() => {
                         location.reload();
                     }, 3000);
@@ -745,10 +770,10 @@
         }
 
         async function stopServer() {
-            showModal('Stop Server', 'Are you sure you want to stop the server?', async () => {
+            showModal(txt('stop_title'), txt('stop_msg'), async () => {
                 try {
                     await fetch('/shutdown', { method: 'POST' });
-                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>Server Stopped</h1><p>You can close this tab.</p></div>';
+                    document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;"><h1>${txt('stop_done_title')}</h1><p>${txt('stop_done_msg')}</p></div>`;
                 } catch (e) {
                     alert('Error stopping server');
                 }
@@ -771,20 +796,19 @@
             try {
                 const response = await fetch('/db_size');
                 const data = await response.json();
-                document.getElementById('dbSize').textContent = `DB Size: ${data.size}`;
+                document.getElementById('dbSizeVal').textContent = data.size;
             } catch (e) {
                 console.error('Failed to get DB size');
             }
         }
 
         async function clearDB() {
-            showModal('Clear Database', 'Are you sure you want to clear the database? All history will be lost.', async () => {
+            showModal(txt('clear_title'), txt('clear_msg'), async () => {
                 try {
                     const response = await fetch('/clear_db', { method: 'POST' });
                     const data = await response.json();
                     if (data.status === 'ok') {
-                        // Using simple alert here for success message is fine, or could use another modal
-                        // alert('Database cleared.');
+                        // alert(txt('db_cleared'));
                         updateDBSize();
                         updateHistory();
                         // Clear UI results
@@ -802,6 +826,7 @@
                 }
             });
         }
+
 
         async function updateHistory() {
             try {
@@ -821,9 +846,134 @@
             }
         }
 
+        // Translations
+        const translations = {
+            en: {
+                app_title: 'SYSTEM SEE',
+                scan_history_placeholder: 'Scan History...',
+                db_size_label: 'DB Size:',
+                clear_db_btn: 'Clear DB',
+                restart_btn: 'Restart Server',
+                stop_btn: 'Stop Server',
+                scan_btn: 'Scan Drive C:',
+                scan_btn_loading: 'Scanning...',
+                loading_text: 'Scanning in progress (this may take a while)',
+                time_label: 'Time:',
+                files_label: 'Total Files:',
+                new_files: 'New Files',
+                mod_files: 'Modified Files',
+                del_files: 'Deleted Files',
+                modal_ok: 'OK',
+                modal_cancel: 'Cancel',
+                restart_title: 'Restart Server',
+                restart_msg: 'Are you sure you want to restart the server? The page will reload.',
+                stop_title: 'Stop Server',
+                stop_msg: 'Are you sure you want to stop the server?',
+                clear_title: 'Clear Database',
+                clear_msg: 'Are you sure you want to clear the database? All history will be lost.',
+                db_cleared: 'Database cleared.',
+                stop_done_title: 'Server Stopped',
+                stop_done_msg: 'You can close this tab.',
+                restart_done_title: 'Server Restarting...',
+                restart_done_msg: 'The page will reload in a few seconds.',
+                no_changes: 'No changes detected',
+                sys_files: 'System Files',
+                unknown: 'Unknown',
+                more_files: '...and {n} more files'
+            },
+            ru: {
+                app_title: 'СИСТЕМНОЕ ОКО',
+                scan_history_placeholder: 'История сканирований...',
+                db_size_label: 'Размер БД:',
+                clear_db_btn: 'Очистить БД',
+                restart_btn: 'Перезапуск',
+                stop_btn: 'Стоп Сервер',
+                scan_btn: 'Сканировать диск C:',
+                scan_btn_loading: 'Сканирование...',
+                loading_text: 'Идет сканирование (может занять время)',
+                time_label: 'Время:',
+                files_label: 'Всего файлов:',
+                new_files: 'Новые файлы',
+                mod_files: 'Измененные',
+                del_files: 'Удаленные',
+                modal_ok: 'ОК',
+                modal_cancel: 'Отмена',
+                restart_title: 'Перезапуск сервера',
+                restart_msg: 'Вы уверены, что хотите перезапустить сервер? Страница будет перезагружена.',
+                stop_title: 'Остановка сервера',
+                stop_msg: 'Вы уверены, что хотите остановить сервер?',
+                clear_title: 'Очистка базы данных',
+                clear_msg: 'Вы уверены? Вся история будет потеряна.',
+                db_cleared: 'База данных очищена.',
+                stop_done_title: 'Сервер остановлен',
+                stop_done_msg: 'Можно закрыть вкладку.',
+                restart_done_title: 'Сервер перезапускается...',
+                restart_done_msg: 'Страница обновится через несколько секунд.',
+                no_changes: 'Изменений не обнаружено',
+                sys_files: 'Системные файлы',
+                unknown: 'Неизвестно',
+                more_files: '...и еще {n} файлов'
+            }
+        };
+
+        let currentLang = localStorage.getItem('system_see_lang') || 'en';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ru' : 'en';
+            localStorage.setItem('system_see_lang', currentLang);
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const t = translations[currentLang];
+            const btn = document.querySelector('.lang-btn');
+
+            // Update Toggle Button Text (Show the other language as option)
+            btn.textContent = currentLang === 'en' ? 'RU' : 'EN';
+
+            // Update static elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // Update Scan Button specific state if not disabled
+            const scanBtn = document.getElementById('scanBtn');
+            if (scanBtn && !scanBtn.disabled) {
+                scanBtn.textContent = t.scan_btn;
+            }
+
+            // Update history dropdown placeholder (first option)
+            const dropdown = document.getElementById('historyDropdown');
+            if (dropdown && dropdown.options.length > 0) {
+                const firstOpt = dropdown.options[0];
+                if (firstOpt.value === "") {
+                    // Only update if it's the placeholder, preserve total count if needed or re-render
+                    // For simplicity, we just check if it contains 'Total'
+                    if (firstOpt.textContent.includes('(')) {
+                        // Keep the count
+                        const count = firstOpt.textContent.match(/\d+/)[0];
+                        firstOpt.textContent = t.scan_history_placeholder.replace('...', '') + ` (Total: ${count})`;
+                    } else {
+                        firstOpt.textContent = t.scan_history_placeholder;
+                    }
+                }
+            }
+        }
+
+        // --- Update existing functions to use translations ---
+        // We override the button text logic in startScan
+        // And messages in modals
+
+        // Helper to get text safely
+        function txt(key) {
+            return translations[currentLang][key] || key;
+        }
+
         // Init DB size on load
         updateDBSize();
         updateHistory();
+        applyLanguage();
     </script>
 
 </body>
