@@ -2,7 +2,7 @@ import html
 import os
 from datetime import datetime
 
-def generate_html(save_data: list, output_file: str = "index.html"):
+def generate_html(save_data: list, scanned_paths: list = None, output_file: str = "index.html"):
     """Generates an HTML report of found save paths with game names."""
     
     # Sort by game name
@@ -14,6 +14,45 @@ def generate_html(save_data: list, output_file: str = "index.html"):
     steam_unidentified_data = [item for item in all_steam if item["game"].startswith("Steam App ")]
     other_data = [item for item in sorted_data if item not in all_steam]
     
+    scanned_list_html = ""
+    if scanned_paths:
+        items = "".join([f"<li style='padding: 6px 0; border-bottom: 1px solid #444; font-family: monospace; color: #ccc; font-size: 0.9em;'>{html.escape(str(p))}</li>" for p in scanned_paths])
+        scanned_list_html = f"""
+        <div class="scanned-paths" style="margin-top: 30px; margin-bottom: 20px;">
+            <div style="
+                cursor: pointer;
+                color: #0088ff;
+                border-left: 4px solid #0088ff;
+                padding-left: 15px;
+                background: rgba(0, 136, 255, 0.1);
+                padding-top: 8px;
+                padding-bottom: 8px;
+                font-size: 1.5em;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-radius: 0 4px 4px 0;
+            " onclick="const el = document.getElementById('scanned-list'); const arrow = document.getElementById('scan-arrow'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; arrow.innerText = el.style.display === 'none' ? '▼' : '▲';">
+                <span>🔍 Scanned Locations ({len(scanned_paths)})</span>
+                <span id="scan-arrow" style="font-size: 0.6em; opacity: 0.7; margin-right: 15px;">▼</span>
+            </div>
+            <ul id="scanned-list" style="
+                margin: 0;
+                padding: 15px 20px;
+                background-color: #363636;
+                border-bottom-left-radius: 6px;
+                border-bottom-right-radius: 6px;
+                list-style-type: none;
+                display: none;
+                border: 1px solid #444; /* Match table border */
+                border-top: none;
+            ">
+                {items}
+            </ul>
+        </div>
+        """
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -206,6 +245,8 @@ def generate_html(save_data: list, output_file: str = "index.html"):
                     </button>
                 </div>
             </div>
+            
+            {scanned_list_html}
             
             <div class="stats" style="margin-bottom: 30px;">
                 Found <strong style="color: #4caf50;">{len(sorted_data)}</strong> game save locations.

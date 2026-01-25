@@ -137,7 +137,7 @@ class GameSaveFinder:
             except Exception as e:
                 print(f"Error accessing {root}: {e}")
 
-        return found_saves
+        return found_saves, search_roots
 
     def _scan_steamapps(self, steamapps_root: pathlib.Path, found_saves: List[dict]):
         """Helper to scan inside 'steamapps/common'."""

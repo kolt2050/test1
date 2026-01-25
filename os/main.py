@@ -12,6 +12,7 @@ from backup_manager import BackupManager
 
 # Global state to share scan results
 SCAN_RESULTS = []
+SCAN_PATHS = []
 
 class SaveScannerHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -20,7 +21,7 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        global SCAN_RESULTS
+        global SCAN_RESULTS, SCAN_PATHS
         if self.path == '/backup':
             try:
                 print("Received backup request...")
@@ -73,10 +74,10 @@ class SaveScannerHandler(SimpleHTTPRequestHandler):
             try:
                 print("Received scan request...")
                 finder = GameSaveFinder()
-                SCAN_RESULTS = finder.scan()
+                SCAN_RESULTS, SCAN_PATHS = finder.scan()
                 
                 # Regenerate HTML
-                generate_html(SCAN_RESULTS)
+                generate_html(SCAN_RESULTS, SCAN_PATHS)
                 print("Report regenerated.")
                 
                 self.send_response(200)
@@ -101,29 +102,35 @@ def run_server(port=8000):
     httpd.serve_forever()
 
 def main():
-    global SCAN_RESULTS
-    print("--- Game Save Finder & Server ---")
-    
-    # 1. Perform Scan
-    finder = GameSaveFinder()
-    SCAN_RESULTS = finder.scan()
+    try:
+        global SCAN_RESULTS, SCAN_PATHS
+        print("--- Game Save Finder & Server ---")
+        
+        # 1. Perform Scan
+        finder = GameSaveFinder()
+        SCAN_RESULTS, SCAN_PATHS = finder.scan()
 
-    if SCAN_RESULTS:
-        print(f"\nFound {len(SCAN_RESULTS)} potential save locations.")
-        
-        # 2. Generate HTML (static file for the server to serve)
-        generate_html(SCAN_RESULTS)
-        print(f"Report generated: index.html")
-        
-        # 3. Start Server
-        print("\nStarting local server interface...")
-        print("Press Ctrl+C to stop.")
-        try:
-            run_server()
-        except KeyboardInterrupt:
-            print("\nServer stopped.")
-    else:
-        print("\nNo obvious save locations found.")
+        if SCAN_RESULTS:
+            print(f"\nFound {len(SCAN_RESULTS)} potential save locations.")
+            print(f"DEBUG: SCAN_PATHS has {len(SCAN_PATHS)} items.")
+            
+            # 2. Generate HTML (static file for the server to serve)
+            generate_html(SCAN_RESULTS, SCAN_PATHS)
+            print(f"Report generated: index.html")
+            
+            # 3. Start Server
+            print("\nStarting local server interface...")
+            print("Press Ctrl+C to stop.")
+            try:
+                run_server()
+            except KeyboardInterrupt:
+                print("\nServer stopped.")
+        else:
+            print("\nNo obvious save locations found.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        input("Press Enter to exit...")
 
 if __name__ == "__main__":
     main()
